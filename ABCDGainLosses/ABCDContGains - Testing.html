@@ -89,7 +89,7 @@
   // Study 2b-2 - 1,1,1,0
   // Study 2b-3 - 1,1,2,1
   var StudyNum = 0
-  var RwdType = 1
+  var RwdType = 2
   var VarType = 2
   var FreqType = 0
 
@@ -132,7 +132,7 @@
 
 // ///// For Study 2, comment out then transfer
   // Define reward values
-  const RwdMat = [[.70,.30,.70,.30],[.65,.35,.75,.25]]
+  const RwdMat = [[.70,.30,.70,.30],[.65,.35,.75,.25],[3.9,2.1,4.5,1.5]]
 
   // Define variance
   var VarMat = [[[.43,.12,.12],[.43,.12,.28]],
@@ -152,10 +152,10 @@
 
   // get variance values
   //unlear how to interpret the code, so adding manually
-  var VarA = .43//VarMat[0][StudyNum][VarType]
-  var VarB = .43//VarMat[1][StudyNum][VarType]
-  var VarC = .43//VarMat[2][StudyNum][VarType]
-  var VarD = .43//VarMat[3][StudyNum][VarType]
+  var VarA = 2.58//VarMat[0][StudyNum][VarType]
+  var VarB = 2.58//VarMat[1][StudyNum][VarType]
+  var VarC = 2.58//VarMat[2][StudyNum][VarType]
+  var VarD = 2.58//VarMat[3][StudyNum][VarType]
 
   var Freq = FreqMat[FreqType]
 
