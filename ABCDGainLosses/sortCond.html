@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="pure-release-0.6.0/pure-min.css">
+  <link rel="stylesheet" href="sort.css">
+  <title>Experiment</title>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="jatos.js"></script>
+
+</head>
+
+  <body>
+	  <p>When you are ready to begin, press the button below to view the experiment instructions</p>
+	  <button id="continueButton" class="pure-button" disabled>Continue</button>
+
+
+    <script>
+    	jatos.onLoad(function () {
+    		initBatchConditions();
+    		$('#continueButton').prop('disabled', false);
+    	});
+
+    	// We use JATOS' Batch Session to store which conditions are available.
+    	// If this is the first run we have to initialize the Batch Session with
+    	// the data from the component's JSON input. You can 'reset' the conditions
+    	// by deleting them from the Batch Session.
+
+      //Under the properties tab of this html file component in jatos, add the following json text to the json field at the bottom.
+      //{
+      //    "conditionCounts": {
+      //    "A": 10,
+      //    "B": 10
+      //    }
+      //}
+      // WHere A and B (or more if you add them), are arbitrary conditions, and the numbers are however, many people you want for each condition
+
+    	function initBatchConditions() {
+    		// Check if 'conditions' are not already in the batch session
+    		if (!jatos.batchSession.defined("/conditions")) {
+    			// Get the count of each condition
+          //console.log(jatos.componentJsonInput.condition)
+    			var conditionCounts = jatos.componentJsonInput.conditionCounts;
+          var conditions = []
+    			// Fill the array with conditions according to the counters
+    			fillArrayWithValues(conditions, "Gains", conditionCounts.Gains);
+    			fillArrayWithValues(conditions, "Losses", conditionCounts.Losses);
+          fillArrayWithValues(conditions, "GainsEF", conditionCounts.GainsEF);
+          fillArrayWithValues(conditions, "LossesEF", conditionCounts.LossesEF);
+
+    			// Put the conditions in the batch session
+    			jatos.batchSession.set("conditions", conditions)
+    				.fail(initBatchConditions); // If it fails: try again
+    		}
+    	}
+
+    	function fillArrayWithValues(array, value, count) {
+    		for (var i = 0; i < count; i++) {
+    			array.push(value);
+    		}
+    	}
+
+    	$('#continueButton').click(function () {
+    		var nextCondition = getNextCondition();
+    		var nextComponentPosition;
+    		switch (nextCondition) {
+
+          case "Gains":
+    				nextComponentPosition = 14;
+    				break;
+    			case "Losses":
+    				nextComponentPosition = 15;
+    				break;
+          case "GainsEF":
+      			nextComponentPosition = 16;
+      			break;
+          case "LossesEF":
+    				nextComponentPosition = 17;
+    				break;
+    			
+    		}
+
+    		var resultData = {"Condition":nextCondition}
+    		jatos.submitResultData(resultData, function () {
+    			jatos.startComponentByPos(nextComponentPosition);
+    		});
+    	})
+
+    	function getNextCondition() {
+    		// Get the still available conditions from the Batch Session
+    		var conditions = jatos.batchSession.get("conditions");
+    		// If no more conditions throw an error
+    		if (conditions.length == 0) {
+    			$('p').text("Error: max number of workers reached.");
+    			throw "Max number of workers reached.";
+    		}
+    		// Get a random condition
+    		var randomIndex = Math.floor(Math.random() * conditions.length);
+    		var randomCondition = conditions[randomIndex];
+    		// Delete the choosen condition from the array
+    		conditions.splice(randomIndex, 1);
+    		// Set the changed conditions array in the Batch Session.
+    		jatos.batchSession.set("conditions", conditions).fail(function () {
+    			randomCondition = getNextCondition(); // If it fails: try again
+    		});
+    		return randomCondition;
+    	}
+    </script>
+  </body>
+</html>

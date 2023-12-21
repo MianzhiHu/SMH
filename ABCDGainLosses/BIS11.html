@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <!--Basic HTML info. All plugins and CSS needs to be called -->
+  <title>Experiment</title>
+  <link href="static/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+  <script src="static/js/jspsych-6.0.1/jspsych.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="static/lib/jquery-min.js" type="text/javascript"></script>
+  <script src="static/lib/underscore-min.js" type="text/javascript"></script>
+  <script src="static/lib/backbone-min.js" type="text/javascript"></script>
+  <!--Below is the experiment javascript file -->
+  <script src='jatos.js'></script>
+  <noscript>
+              <h1>Warning: Javascript seems to be disabled</h1>
+              <p>This website requires that Javascript be enabled on your browser.</p>
+              <p>Instructions for enabling Javascript in your browser can be found
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+  </noscript>
+  <script>
+
+    var timeline = []
+    var trialnum = 0
+    // Number of survey items wanted to show on screen. Will accept values that produce a remainder
+    var numPerPage = 4
+    var respMat = []
+    var question = ''
+    var instructText = '<p>People differ in the ways they act and think in different situations.<br>'+ 
+						'This is a test to measure some of the ways in which you act and think.<br>'+
+						'Read each statement and select the appropriate bubble. Do not spend too much<br>'+ 
+						'time on any statement. Answer quickly and honestly.</p><p>Press any key to begin...</p>'
+    var BISRs = ['Rarely/Never' , 'Occassionally', 'Often', 'Most always/Always']
+    var BISQs = [
+        '1. I plan tasks carefully.',
+        '2. I do things without thinking.',
+        '3. I make up my mind quickly.',
+        '4. I am happy-go-lucky.',
+        '5. I do not pay attention.',
+        '6. I have racing thoughts.',
+        '7. I plan trips well ahead of time.',
+        '8. I am self-controlled.',
+        '9. I concentrate easily.',
+        '10. I save regularly.',
+        '11. I find it hard to sit still for long periods of time.',
+        '12. I am a careful thinker.',
+        '13. I plan for job security.',
+        '14. I say things without thinking.',
+        '15. I like to think about complex problems.',
+        '16. I change jobs.',
+        '17. I act on impulse.',
+        '18. I get easily bored when solving thought problems.',
+        '19. I act on the spur of the moment.',
+        '20. I am a steady thinker.',
+        '21. I change where I live.',
+        '22. I buy things on impulse.',
+        '23. I can only think about one thing at a time.',
+        '24. I change hobbies.',
+        '25. I spend or charge more than I earn.',
+        '26. I have outside thoughts when thinking.',
+        '27. I am more interested in the present than the future.',
+        '28. I am restless at the movies or lectures.',
+        '29. I like puzzles',
+        '30. I plan for the future.',
+      ]
+
+      // Vars that let us show the proper number of items per fullPages
+      // In the event that there are leftover questions, these vars Will
+      // make it to where those last items are shown by themselves
+      var iter = []
+      var iterPos = 0
+      var lastItems = BISQs.length%numPerPage
+      var fullPages = (BISQs.length-lastItems)/numPerPage
+      for (let i = 0; i < fullPages; i++) {
+        iter.push(numPerPage)
+      }
+      iter.push(lastItems)
+
+      var sumFunc = (a,b) => a+b
+      var getQs = function(){
+        // Generate the correct number of items to show on screen
+        var QMat = []
+        for (let i = 0; i < iter[iterPos]; i++) {
+          QMat.push({prompt: BISQs[trialnum+i], name: 'BIS11', options: BISRs, required:true, horizontal: true})
+        }
+          return QMat
+      }
+
+      var trialSave = function(){
+        revCount = [0,6,7,8,9,11,12,14,19,28,29]
+        var scoreMat = []
+        for (let i = 0; i < respMat.length; i++) {
+          if (i == revCount[0]){
+            scoreMat[i] = (respMat[i]*-1)+5
+            revCount.shift()
+          } else {
+            scoreMat[i] = respMat[i]
+          }
+        }
+        var BISTotal = scoreMat.reduce(sumFunc)
+
+        // First order factors
+        var BISAttent1st = scoreMat[4] + scoreMat[8] + scoreMat[10] + scoreMat[19] + scoreMat[27]
+        var BISCogInsta =  scoreMat[5] + scoreMat[23] + scoreMat[25]
+        var BISMotor1st =  scoreMat[1] + scoreMat[2] + scoreMat[3] + scoreMat[16] + scoreMat[18] + scoreMat[21] + scoreMat[24]
+        var BISPerser =  scoreMat[15] + scoreMat[20] + scoreMat[22] + scoreMat[29]
+        var BISSelfCont =  scoreMat[0] + scoreMat[6] + scoreMat[7] + scoreMat[11] + scoreMat[12] + scoreMat[13]
+        var BISCogComp =  scoreMat[9] + scoreMat[14] + scoreMat[17] + scoreMat[26] + scoreMat[28]
+
+        // Second Order factors
+        var BISAttent2nd = BISAttent1st+BISCogInsta
+        var BISMotor2nd = BISMotor1st+BISPerser
+        var BISNonPlan = BISSelfCont+BISCogComp
+
+        return {
+          "BIS11Resp":respMat,
+          "BISScore":BISTotal,
+          "BISCogInsta":BISCogInsta,
+          "BISMotor1st":BISMotor1st,
+          "BISPerser":BISPerser,
+          "BISSelfCont":BISSelfCont,
+          "BISCogComp":BISCogComp,
+          "BISAttent2nd":BISAttent2nd,
+          "BISMotor2nd":BISMotor2nd,
+          "BISNonPlan":BISNonPlan
+        }
+      }
+
+      var instrux = {
+        type: 'html-keyboard-response',
+        stimulus: instructText,
+        response_ends_trial: true
+      }
+
+      var multi_choice_block = {
+        type: 'survey-multi-choice',//'survey-likert',//
+        questions: getQs,
+        //scale_width: 700,
+        on_finish:function(data){
+          trialnum = trialnum + numPerPage
+          iterPos = iterPos+1
+          var trialResp = JSON.parse(data.responses)
+
+          var ind = []
+          for (let i = 0; i < iter[iterPos-1]; i++) {
+            ind.push(trialResp["Q"+i])
+          }
+
+          // Convert strings to numeric values and save
+          for (let i = 0; i < (ind.length); i++) {
+            respMat.push(BISRs.indexOf(ind[i])+1)
+          }
+        }
+      };
+
+      var blackScreen = {
+        type: 'html-keyboard-response',
+        stimulus: '',
+        trial_duration: 500
+      }
+
+      var saveData = {
+        type: 'html-keyboard-response',
+        stimulus: 'You have completed this survey. Press any key to continue...',
+        data: trialSave,
+        response_ends_trial: true
+      }
+
+      timeline.push(instrux)
+      for (let i = 0; i < (iter.length); i++) {
+        timeline.push(multi_choice_block)
+        timeline.push(blackScreen)
+      }
+      timeline.push(saveData)
+
+  	jatos.onLoad(function() {
+  		jsPsych.init({
+  			timeline: timeline,
+
+  			on_finish: function(data){ //edit this for the experiment
+
+          var dataMat = {
+            "BIS11Resp":jsPsych.data.get().select('BIS11Resp').values,
+            "BISScore":jsPsych.data.get().select('BISScore').values,
+            "BISCogInsta":jsPsych.data.get().select('BISCogInsta').values,
+            "BISMotor1st":jsPsych.data.get().select('BISMotor1st').values,
+            "BISPerser":jsPsych.data.get().select('BISPerser').values,
+            "BISSelfCont":jsPsych.data.get().select('BISSelfCont').values,
+            "BISCogComp":jsPsych.data.get().select('BISCogComp').values,
+            "BISAttent2nd":jsPsych.data.get().select('BISAttent2nd').values,
+            "BISMotor2nd":jsPsych.data.get().select('BISMotor2nd').values,
+            "BISNonPlan":jsPsych.data.get().select('BISNonPlan').values
+          }
+          //console.log(dataMat)
+          //var resultJson1 = jsPsych.data.get().csv(); //filterCustom({Save_Data: 'Save'}).
+          jatos.addJatosIds(dataMat);
+		  var resultJson = JSON.stringify(dataMat);
+          jatos.submitResultData(resultJson, jatos.startNextComponent)
+  			}
+  		});
+  	//}
+
+  });
+  </script>
+  </body>
+  </html>

@@ -1,0 +1,282 @@
+/*
+ * CSS for jsPsych experiments.
+ *
+ * This stylesheet provides minimal styling to make jsPsych
+ * experiments look polished without any additional styles.
+ */
+
+ /* Container holding jsPsych content */
+ body {
+     background-color: black;
+ }
+ .jspsych-display-element {
+   display: flex;
+   flex-direction: row;
+   overflow-y: auto;
+
+ }
+ /* .display_stage {
+     position: fixed;
+     background: #900;
+     left: 5vw;
+     top: 2vh;
+     height: 94vh;
+     width: 90vw;
+     background-color: black;
+     border-radius: 15px;
+     border: 1vh solid #D0D0D0;
+     z-index: 0;
+ } */
+ #stimBox{
+   height: 400px;
+  width: 400px;
+    position:absolute;
+  /* transform: translate(-110%,-100%); */
+}
+#canvas {
+  /* display: block; */
+  margin: 1 auto;
+  /* left:50%;
+  top:20%; */
+}
+
+ .jspsych-display-element:focus {
+   outline: none;
+ }
+
+ .jspsych-content-wrapper {
+   display: flex;
+   margin: auto;
+   flex: 1 1 100%;
+   width: 100%;
+   height: 100%;
+
+ }
+
+ .jspsych-content {
+   max-width: 95%;
+   text-align: center;
+   margin: auto;
+
+ }
+
+ .jspsych-top {
+   align-items: flex-start;
+ }
+
+ .jspsych-middle {
+   align-items: center;
+ }
+
+ .stimBox1 {
+     display: block;
+     height: 200px;
+ 	position:relative;
+ 	top:100%;
+ 	left:60%;
+ }
+
+ .stimBox2 {
+     display: block;
+     height: 200px;
+ 	position:relative;
+ 	top:50%;
+ 	left:20%;
+ }
+
+ .stimulus1 {
+   width: 50px;
+height: 200px;
+    margin-right: auto;
+}
+
+.stimulus2 {
+  width: 300px;
+height: 200px;
+    margin-right: auto;
+}
+
+.row {
+  display: table;
+  flex-wrap: wrap;
+  padding: 0 50px;
+}
+
+/* Create two equal columns that sits next to each other */
+.column {
+  display: table-cell;
+  padding: 0 100px;
+}
+
+/* Container holding the image and the text */
+.container {
+    position: relative;
+    text-align: center;
+    color: white;
+}
+
+/* Positioning for boxes and text */
+.centered1 {
+    position: absolute;
+    top: 35%;
+    left: 25%;
+    transform: translate(-50%, -50%);
+}
+.centered2 {
+    position: absolute;
+    top: 35%;
+    left: 40%;
+    transform: translate(-50%, -50%);
+}
+.centered3 {
+    position: absolute;
+    top: 35%;
+    left: 55%;
+    transform: translate(-50%, -50%);
+}
+.centered4 {
+    position: absolute;
+    top: 35%;
+    left: 70%;
+    transform: translate(-50%, -50%);
+}
+.centeredText1 {
+    position: absolute;
+    top: 17%;
+    left: 25%;
+    transform: translate(-50%, -50%);
+}
+.centeredText2 {
+    position: absolute;
+    top: 17%;
+    left: 40%;
+    transform: translate(-50%, -50%);
+}
+.centeredText3 {
+    position: absolute;
+    top: 17%;
+    left: 55%;
+    transform: translate(-50%, -50%);
+}
+.centeredText4 {
+    position: absolute;
+    top: 17%;
+    left: 70%;
+    transform: translate(-50%, -50%);
+}
+.centeredReward1 {
+    position: absolute;
+    top: 35%;
+    left: 25%;
+    transform: translate(-50%, -50%);
+}
+.centeredReward2 {
+    position: absolute;
+    top: 35%;
+    left: 40%;
+    transform: translate(-50%, -50%);
+}
+.centeredReward3 {
+    position: absolute;
+    top: 35%;
+    left: 55%;
+    transform: translate(-50%, -50%);
+}
+.centeredReward4 {
+    position: absolute;
+    top: 35%;
+    left: 70%;
+    transform: translate(-50%, -50%);
+}
+/* .column img {
+  margin-top: 100px;
+  vertical-align: middle;
+} */
+
+
+/* fonts and type */
+
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,400,700);
+
+.jspsych-display-element {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  color: white;
+  font-size: 18px;
+  line-height: 1.6em;
+}
+
+/* Form elements like input fields and buttons */
+
+input[type="text"] {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  font-size: 14px;
+}
+
+/* borrowing Bootstrap style for btn elements, but combining styles a bit */
+.jspsych-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #333;
+  background-color: #fff;
+  border-color: #ccc;
+}
+
+.jspsych-btn:hover {
+  background-color: #ddd;
+  border-color: #aaa;
+}
+
+.jspsych-btn:disabled {
+  background-color: #eee;
+  color: #aaa;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* jsPsych progress bar */
+
+#jspsych-progressbar-container {
+  color: #555;
+  border-bottom: 1px solid #dedede;
+  background-color: #f9f9f9;
+  margin-bottom: 1em;
+  text-align: center;
+  padding: 8px 0px;
+  width: 100%;
+  line-height: 1em;
+}
+#jspsych-progressbar-container span {
+  font-size: 14px;
+  padding-right: 14px;
+}
+#jspsych-progressbar-outer {
+  background-color: #eee;
+  width: 50%;
+  margin: auto;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+#jspsych-progressbar-inner {
+  background-color: #aaa;
+  width: 0%;
+  height: 100%;
+}
+
+/* Control appearance of jsPsych.data.displayData() */
+#jspsych-data-display {
+  text-align: left;
+}

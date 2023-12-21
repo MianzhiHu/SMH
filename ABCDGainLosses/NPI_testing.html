@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <!--Basic HTML info. All plugins and CSS needs to be called -->
+  <title>Experiment</title>
+  <link href="static/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+  <script src="static/js/jspsych-6.0.1/jspsych.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="static/lib/jquery-min.js" type="text/javascript"></script>
+  <script src="static/lib/underscore-min.js" type="text/javascript"></script>
+  <script src="static/lib/backbone-min.js" type="text/javascript"></script>
+  <!--Below is the experiment javascript file -->
+  <script src='jatos.js'></script>
+  <noscript>
+              <h1>Warning: Javascript seems to be disabled</h1>
+              <p>This website requires that Javascript be enabled on your browser.</p>
+              <p>Instructions for enabling Javascript in your browser can be found
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+  </noscript>
+  <script>
+	var resptmp=[]
+    var timeline = []
+    var trialnum = 0
+    // Number of survey items wanted to show on screen. Will accept values that produce a remainder
+    var numPerPage = 4
+    var respMat = []
+    var question = ''
+    var instructText = '<p>You will be shown two statements. Please select which of the two statements\
+							best describes you even if it is not a perfect fit.</p><p>Press any key to begin...</p>'
+    var survyRs = [
+	['I have a natural talent for influencing people.', 'I am not good at influencing people.'],
+	['Modesty doesn\'t become me.', 'I am essentially a modest person.'],
+	['I would do almost anything on a dare.', 'I tend to be a fairly cautious person.'],
+	['When people compliment me I sometimes get embarrassed', 'I know that I am good because everybody keeps telling me so.'],
+	['The thought of ruling the world frightens the hell out of me.', 'If I ruled the world it would be a better place.'],
+	['I can usually talk my way out of anything.', 'I try to accept the consequences of my behavior.'],
+	['I prefer to blend in with the crowd.', 'I like to be the center of attention.'],
+	['I will be a success.', 'I am not too concerned about success.'],
+	['I am no better or worse than most people.', 'I think I am a special person.'],
+	['I am not sure if I would make a good leader.', 'I see myself as a good leader.'],
+	['I am assertive.', 'I wish I were more assertive.'],
+	['I like to have authority over other people.', 'I don\'t mind following orders.'],
+	['I find it easy to manipulate people.', 'I don\'t like it when I find myself manipulating people.'],
+	['I insist upon getting the respect that is due me.', 'I usually get the respect that I deserve.'],
+	['I don\'t particularly like to show off my body.', 'I like to show off my body.'],
+	['I can read people like a book.', 'People are sometimes hard to understand.'],
+	['If I feel competent I am willing to take responsibility for making decisions.', 'I like to take responsibility for making decisions.'],
+	['I just want to be reasonably happy.', 'I want to amount to something in the eyes of the world.'],
+	['My body is nothing special.', 'I like to look at my body.'],
+	['I try not to be a show off.', 'I will usually show off if I get the chance.'],
+	['I always know what I am doing.', 'Sometimes I am not sure of what I am doing.'],
+	['I sometimes depend on people to get things done.', 'I rarely depend on anyone else to get things done.'],
+	['Sometimes I tell good stories.', 'Everybody likes to hear my stories.'],
+	['I expect a great deal from other people.', 'I like to do things for other people.'],
+	['I will never be satisfied until I get all that I deserve.', 'I take my satisfactions as they come.'],
+	['Compliments embarrass me.', 'I like to be complimented.'],
+	['I have a strong will to power.', 'Power for its own sake doesn\'t interest me.'],
+	['I don\'t care about new fads and fashions.', 'I like to start new fads and fashions.'],
+	['I like to look at myself in the mirror.', 'I am not particularly interested in looking at myself in the mirror.'],
+	['I really like to be the center of attention.', 'It makes me uncomfortable to be the center of attention.'],
+	['I can live my life in any way I want to.', 'People can\'t always live their lives in terms of what they want.'],
+	['Being an authority doesn\'t mean that much to me.', 'People always seem to recognize my authority.'],
+	['I would prefer to be a leader.', 'It makes little difference to me whether I am a leader or not.'],
+	['I am going to be a great person.', 'I hope I am going to be successful.'],
+	['People sometimes believe what I tell them.', 'I can make anybody believe anything I want them to.'],
+	['I am a born leader.', 'Leadership is a quality that takes a long time to develop.'],
+	['I wish somebody would someday write my biography.', 'I don\'t like people to pry into my life for any reason.'],
+	['I get upset when people don\'t notice how I look when I go out in public.', 'I don\'t mind blending into the crowd when I go out in public.'],
+	['I am more capable than other people.', 'There is a lot that I can learn from other people.'],
+	['I am much like everybody else.', 'I am an extraordinary person.'],
+	]
+    var survyQs =  'Question '
+
+
+      // Vars that let us show the proper number of items per fullPages
+      // In the event that there are leftover questions, these vars Will
+      // make it to where those last items are shown by themselves
+      var iter = []
+      var iterPos = 0
+      var lastItems = survyRs.length%numPerPage
+      var fullPages = (survyRs.length-lastItems)/numPerPage
+      for (let i = 0; i < fullPages; i++) {
+        iter.push(numPerPage)
+      }
+      iter.push(lastItems)
+	<!-- var revNum = survyRs.length+1 -->
+      var sumFunc = (a,b) => a+b
+      var getQs = function(){
+        // Generate the correct number of items to show on screen
+        var QMat = []
+        for (let i = 0; i < iter[iterPos]; i++) {
+          var qnum = i+1+trialnum
+		  QMat.push({prompt: survyQs.concat(qnum.toString(),'.'), name: 'NPI', options: survyRs[trialnum+i], required:true, horizontal: false})
+        }
+          return QMat
+      }
+
+      var trialSave = function(){
+		revitem = [4, 5, 7, 9, 10, 15, 17, 18, 19, 20, 22, 23, 26, 28, 32, 35, 40]
+        revCount = revitem.map(function(i) {return i-1})
+        var scoreMat = []
+        for (let i = 0; i < respMat.length; i++) {
+          if (i == revCount[0]){
+            scoreMat[i] = (respMat[i]*-1)+3
+            revCount.shift()
+          } else {
+            scoreMat[i] = respMat[i]
+          }
+        }
+        <!-- var BISTotal = scoreMat.reduce(sumFunc) -->
+		var NPITotal= 80-scoreMat.reduce(sumFunc)
+        return {
+          "NPIResp":respMat,
+          "NPIScore":NPITotal,
+        }
+      }
+
+      var instrux = {
+        type: 'html-keyboard-response',
+        stimulus: instructText,
+        response_ends_trial: true
+      }
+
+      var multi_choice_block = {
+        type: 'survey-multi-choice',//'survey-likert',//
+        questions: getQs,
+        //scale_width: 700,
+        on_finish:function(data){
+          trialnum = trialnum + numPerPage
+          iterPos = iterPos+1
+			console.log("iterPos: " + iterPos)
+          var trialResp = JSON.parse(data.responses)
+			resptmp.push(trialResp)
+			console.log("trialResp: " + trialResp)
+          var ind = []
+          for (let i = 0; i < iter[iterPos-1]; i++) {
+            ind.push(trialResp["Q"+i])
+			console.log("ind: " + ind)
+          }
+
+          // Convert strings to numeric values and save
+          for (let i = 0; i < (ind.length); i++) {
+            respMat.push(survyRs[trialnum-numPerPage+i].indexOf(ind[i])+1)
+			console.log(survyRs[trialnum-numPerPage+i])
+          }
+        }
+      };
+
+      var blackScreen = {
+        type: 'html-keyboard-response',
+        stimulus: '',
+        trial_duration: 500
+      }
+
+      var saveData = {
+        type: 'html-keyboard-response',
+        stimulus: 'You have completed this survey. Press any key to continue...',
+        data: trialSave,
+        response_ends_trial: true
+      }
+
+      timeline.push(instrux)
+      for (let i = 0; i < (iter.length); i++) {
+        timeline.push(multi_choice_block)
+        timeline.push(blackScreen)
+      }
+      timeline.push(saveData)
+
+  	jatos.onLoad(function() {
+  		jsPsych.init({
+  			timeline: timeline,
+
+  			on_finish: function(data){ //edit this for the experiment
+
+          var dataMat = {
+            "NPIResp":jsPsych.data.get().select('NPIResp').values,
+            "NPIScore":jsPsych.data.get().select('NPIScore').values,
+
+          }
+          //console.log(dataMat)
+          //var resultJson1 = jsPsych.data.get().csv(); //filterCustom({Save_Data: 'Save'}).
+          jatos.addJatosIds(dataMat);
+		  var resultJson = JSON.stringify(dataMat);
+          jatos.submitResultData(resultJson, jatos.startNextComponent)
+  			}
+  		});
+  	//}
+
+  });
+  </script>
+  </body>
+  </html>

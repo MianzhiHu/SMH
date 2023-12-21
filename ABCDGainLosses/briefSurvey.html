@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <!--Basic HTML info. All plugins and CSS needs to be called -->
+  <title>Experiment</title>
+  <link href="static/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+  <script src="static/js/jspsych-6.0.1/jspsych.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="static/lib/jquery-min.js" type="text/javascript"></script>
+  <script src="static/lib/underscore-min.js" type="text/javascript"></script>
+  <script src="static/lib/backbone-min.js" type="text/javascript"></script>
+  <!--Below is the experiment javascript file -->
+  <script src='jatos.js'></script>
+  <noscript>
+              <h1>Warning: Javascript seems to be disabled</h1>
+              <p>This website requires that Javascript be enabled on your browser.</p>
+              <p>Instructions for enabling Javascript in your browser can be found
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+  </noscript>
+  <script>
+
+    var timeline = []
+
+    // Number of survey items wanted to show on screen. Will accept values that produce a remainder
+    var instrux = {
+      type: 'html-keyboard-response',
+      stimulus: "On the following screen, you will be asked a couple demographic questions and some questions about your surrounds and hardware you are using. When ready, press any key on your keyboard...",
+      response_ends_trial: true
+    }
+    var surveyEnv = {
+      type: 'survey-text',
+      questions: [
+        {prompt: "Describe the environment in which you are completing the study. Are you alone, are you seated, is there background noise?", name: 'Env'},
+      ],
+    };
+
+    var page_1_options = ["Chrome", "Safari", "Firefox", "Edge", "Other"];
+    var multiBrowser = {
+      type: 'survey-multi-choice',
+      questions: [
+        {prompt: "Which internet browser are you using?", name: 'Browsers', options: page_1_options, required:true},
+
+      ],
+    };
+    var page_2_options = ["Windows", "Mac", "Chromebook", "Other"];
+    var multiOS = {
+      type: 'survey-multi-choice',
+      questions: [
+        {prompt: "What type of OS/computer are you using?", name: 'OS', options: page_2_options, required:true},
+
+      ],
+    };
+    var page_3_options = ["Smaller than 11 inches", "11-12 inches", "13-14 inches", "15-16 inches","20-24 inches","Larger than 25 inches"];
+    var multiSize = {
+      type: 'survey-multi-choice',
+      questions: [
+        {prompt: "What is the diagonal dimension of your screen/monitor? (small laptops are typically 13 inches, standard are 15-16, imacs are 21 or 27 inches)", name: 'Size', options: page_3_options, required:true},
+
+      ],
+    };
+    var page_4_options = ["Male", "Female", "Other", "Prefer not to answer"];
+    var multiGender = {
+      type: 'survey-multi-choice',
+      questions: [
+        {prompt: "What do you consider to be your gender identity?", name: 'Gender', options: page_4_options, required:true},
+
+      ],
+    };
+    var surveyAge = {
+      type: 'survey-text',
+      questions: [
+        {prompt: "What is your current age? Type NA if you prefer not to answer.", name: 'Age'},
+      ],
+    };
+    var EthnicityQ = ["Not Hispanic or Latino", "Hispanic or Latino", "Prefer not to answer"];
+    var RaceQ = ["American Indian or Alaskan Native", "Asian", "Native Hawaiin or Other Pacific Islander", "Black or African American", "White", "More than one Race", "Prefer not to answer"];
+    var multiEthn = {
+      type: 'survey-multi-choice',
+      questions: [{
+          prompt: "Please select your ethnicity",
+          options: EthnicityQ,
+          required: true
+        }]
+      }
+      var surveyCountry = {
+        type: 'survey-text',
+        questions: [
+          {prompt: "What is your current country of residence? Type NA if you prefer not to answer.", name: 'Country'},
+        ],
+      };
+    var multiRace = {
+      type: 'survey-multi-choice',
+      questions: [{
+          prompt: "Please select your race",
+          options: RaceQ,
+          required: true
+        }],
+    }
+
+      timeline.push(instrux)
+      //timeline.push(surveyEnv)
+      //timeline.push(multiBrowser)
+      //timeline.push(multiOS)
+      //timeline.push(multiSize)
+      timeline.push(multiGender)
+      timeline.push(multiEthn)
+      timeline.push(multiRace)
+      timeline.push(surveyAge)
+      //timeline.push(surveyCountry)
+
+
+  	jatos.onLoad(function() {
+  		jsPsych.init({
+  			timeline: timeline,
+
+  			on_finish: function(data){ //edit this for the experiment
+
+          var dataMat = {
+            //"Environment":jsPsych.data.get().select('responses').values[0],
+            //"Browser":jsPsych.data.get().select('responses').values[1],
+            //"OS":jsPsych.data.get().select('responses').values[2],
+            //"Size":jsPsych.data.get().select('responses').values[3],
+            "Gender":jsPsych.data.get().select('responses').values[0],
+            "Ethnicity":jsPsych.data.get().select('responses').values[1],
+            "Race":jsPsych.data.get().select('responses').values[2],
+            "Age":jsPsych.data.get().select('responses').values[4]
+            //"Country":jsPsych.data.get().select('responses').values[8]
+          }
+          //console.log(dataMat)
+          //var resultJson1 = jsPsych.data.get().csv(); //filterCustom({Save_Data: 'Save'}).
+          var resultJson = JSON.stringify(dataMat);
+          jatos.submitResultData(resultJson, jatos.startNextComponent)
+  			}
+  		});
+  	//}
+
+  });
+  </script>
+  </body>
+  </html>

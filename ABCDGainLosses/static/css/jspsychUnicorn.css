@@ -1,0 +1,394 @@
+/*
+ * CSS for jsPsych experiments.
+ *
+ * This stylesheet provides minimal styling to make jsPsych
+ * experiments look polished without any additional styles.
+ */
+
+ /* Container holding jsPsych content */
+ body {
+     background-color: black;
+ }
+ .jspsych-display-element {
+   display: flex;
+   flex-direction: row;
+   overflow-y: auto;
+
+ }
+
+ .jspsych-display-element:focus {
+   outline: none;
+ }
+
+ .jspsych-content-wrapper {
+   display: flex;
+   margin: auto;
+   flex: 1 1 100%;
+   width: 100%;
+
+ }
+
+ .jspsych-content {
+   max-width: 95%;
+   text-align: center;
+   margin: auto;
+
+ }
+
+ .jspsych-top {
+   align-items: flex-start;
+ }
+
+ .jspsych-middle {
+   align-items: center;
+ }
+
+ .stimBox1 {
+     display: block;
+     height: 200px;
+ 	position:relative;
+ 	top:100%;
+ 	left:60%;
+ }
+
+ .stimBox2 {
+     display: block;
+     height: 200px;
+ 	position:relative;
+ 	top:50%;
+ 	left:20%;
+ }
+
+ .stimulus1 {
+   width: 50px;
+height: 200px;
+    margin-right: auto;
+}
+
+.stimulus2 {
+  width: 300px;
+height: 200px;
+    margin-right: auto;
+}
+
+.row {
+  display: table;
+  flex-wrap: wrap;
+  padding: 0 50px;
+}
+
+/* Create two equal columns that sits next to each other */
+.column {
+  display: table-cell;
+  padding: 0 100px;
+}
+
+/* Container holding the image and the text */
+/* .container {
+    position: relative;
+    text-align: center;
+    color: white;
+} */
+
+/* Positioning for boxes and text */
+.centered1 {
+    position: absolute;
+    width:200px;
+    height:200px;
+    top: 35%;
+    left: 15%;
+}
+.centered2 {
+    position: absolute;
+    width:200px;
+    height:200px;
+    top: 35%;
+    left: 35%;
+}
+.centered3 {
+    position: absolute;
+    width:200px;
+    height:200px;
+    top: 35%;
+    left: 55%;
+}
+.centered4 {
+    position: absolute;
+    width:200px;
+    height:200px;
+    top: 35%;
+    left: 75%;
+}
+#centeredText1 {
+    position: absolute;
+    top: 28%;
+    left: 34%;
+    font-size: 2vw;
+}
+#centeredText2 {
+    position: absolute;
+    top: 28%;
+    left: 64%;
+    font-size: 2vw;
+}
+#centeredText3 {
+    position: absolute;
+    top: 45%;
+    left: 48%;
+    font-size: 2vw;
+}
+#centeredText4 {
+    position: absolute;
+    top: 45%;
+    left: 67%;
+    font-size: 2vw;
+}
+#letter1 {
+    text-align:center;
+    vertical-align: middle;
+    line-height: 20vw;
+    font-size: 2vw;
+    color:black;
+}
+#letter2 {
+  text-align:center;
+  vertical-align: middle;
+  line-height: 20vw;
+    font-size: 2vw;
+    color:black;
+}
+#letter3 {
+  text-align:center;
+  vertical-align: middle;
+  line-height: 15vw;
+    font-size: 2vw;
+    color:black;
+}
+#letter4 {
+  text-align:center;
+  vertical-align: middle;
+  line-height: 15vw;
+    font-size: 2vw;
+    color:black;
+}
+#feedText {
+  position: absolute;
+    top:85vh;
+    text-align: center;
+    font-size:2vw;
+    transform: translate(-50%, -50%);
+}
+#promptText {
+  position: absolute;
+    top:20vh;
+    left: 47%;
+    font-size:2vw;
+}
+#bankPos {
+    position: absolute;
+    top: 75%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.wrapper2 {
+    position: relative;
+}
+#container {
+  width:100vw;
+  height:100vh;
+  position:relative;
+  background-color:black;
+}
+#box1 {
+  width:15vw;
+  height:20vw;
+  top:35%;
+  left:30%;
+  position:absolute;
+  background-color:purple;
+}
+#box2 {
+  width:15vw;
+  height:20vw;
+  top:35%;
+  left:60%;
+  position:absolute;
+  background-color:green;
+}
+#box3 {
+  width:10vw;
+  height:15vw;
+  top:50%;
+  left:45%;
+  position:absolute;
+  background-color:magenta;
+}
+#box4 {
+  width:10vw;
+  height:15vw;
+  top:50%;
+  left:65%;
+  position:absolute;
+  background-color:lightgreen;
+}
+#box1chose {
+  width:15vw;
+  height:20vw;
+  top:35%;
+  left:30%;
+  position:absolute;
+  background-color:white;
+}
+#box2chose {
+  width:15vw;
+  height:20vw;
+  top:35%;
+  left:60%;
+  position:absolute;
+  background-color:white;
+}
+#box3chose {
+  width:10vw;
+  height:15vw;
+  top:50%;
+  left:45%;
+  position:absolute;
+  background-color:white;
+}
+#box4chose {
+  width:10vw;
+  height:15vw;
+  top:50%;
+  left:65%;
+  position:absolute;
+  background-color:white;
+}
+#pointTotal {
+  top:40%;
+  left:80%;
+  font-size: 2vw; /*calc(12px + (32 - 12) * ((100vw - 400px) / (1080 - 400))); */
+  color:white;
+  position:absolute;
+}
+#pointGoal {
+  top:45%;
+  left:80%;
+  font-size: 2vw; /*calc(12px + (32 - 12) * ((100vw - 400px) / (1080 - 400))); */
+  color:white;
+  position:absolute;
+}
+#rwdText1 {
+  text-align:center;
+  vertical-align: middle;
+  line-height: 20vw;
+    font-size: 2vw;
+    color:black;
+}
+#rwdText2 {
+  text-align:center;
+  vertical-align: middle;
+  line-height: 20vw;
+    font-size: 2vw;
+    color:black;
+}
+#rwdText3 {
+  text-align:center;
+  vertical-align: middle;
+  line-height: 15vw;
+    font-size: 2vw;
+    color:black;
+}
+#rwdText4 {
+  text-align:center;
+  vertical-align: middle;
+  line-height: 15vw;
+    font-size: 2vw;.
+    color:black;
+}
+
+/* fonts and type */
+
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,400,700);
+
+.jspsych-display-element {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  color: white;
+  font-size: 18px;
+  line-height: 1.6em;
+}
+
+/* Form elements like input fields and buttons */
+
+input[type="text"] {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  font-size: 14px;
+}
+
+/* borrowing Bootstrap style for btn elements, but combining styles a bit */
+.jspsych-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 0px;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Open Sans', 'Arial', sans-serif;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #333;
+  background-color: #fff;
+  border-color: #ccc;
+}
+
+.jspsych-btn:hover {
+  background-color: #ddd;
+  border-color: #aaa;
+}
+
+.jspsych-btn:disabled {
+  background-color: #eee;
+  color: #aaa;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* jsPsych progress bar */
+
+#jspsych-progressbar-container {
+  color: #555;
+  border-bottom: 1px solid #dedede;
+  background-color: #f9f9f9;
+  margin-bottom: 1em;
+  text-align: center;
+  padding: 8px 0px;
+  width: 100%;
+  line-height: 1em;
+}
+#jspsych-progressbar-container span {
+  font-size: 14px;
+  padding-right: 14px;
+}
+#jspsych-progressbar-outer {
+  background-color: #eee;
+  width: 50%;
+  margin: auto;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+#jspsych-progressbar-inner {
+  background-color: #aaa;
+  width: 0%;
+  height: 100%;
+}
+
+/* Control appearance of jsPsych.data.displayData() */
+#jspsych-data-display {
+  text-align: left;
+}

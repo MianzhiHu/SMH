@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <!--Basic HTML info. All plugins and CSS needs to be called -->
+  <title>Experiment</title>
+  <link href="static/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+  <script src="static/js/jspsych-6.0.1/jspsych.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="static/lib/jquery-min.js" type="text/javascript"></script>
+  <script src="static/lib/underscore-min.js" type="text/javascript"></script>
+  <script src="static/lib/backbone-min.js" type="text/javascript"></script>
+  <!--Below is the experiment javascript file -->
+  <script src='jatos.js'></script>
+  <noscript>
+              <h1>Warning: Javascript seems to be disabled</h1>
+              <p>This website requires that Javascript be enabled on your browser.</p>
+              <p>Instructions for enabling Javascript in your browser can be found
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+  </noscript>
+  <script>
+
+    var timeline = []
+    var trialnum = 0
+    // Number of survey items wanted to show on screen. Will accept values that produce a remainder
+    var numPerPage = 4
+    var respMat = []
+    var question = ''
+    var instructText = '<p>For the following items, give an answer that best describes how typical or characteristic each item is of you.</p><p>Press any key to begin...</p>'
+    var survyRs = ['True', 'Somewhat true', 'Somewhat false', 'False']
+    var survyQs = [
+    '1. I have had problems at work because I was irresponsible.',
+    '2. I have stolen something out of a vehicle.',
+    '3. I get in trouble for not considering the consequences of my actions.',
+    '4. I have missed work without bothering to call in.',
+    '5. I have taken money from someones purse or wallet without asking.',
+    '6. Others have told me they are concerned about my lack of self-control.',
+    '7. I often get bored quickly and lose interest.',
+    '8. I have taken items from a store without paying for them.',
+    '9. I have gotten in trouble because I missed too much school.',
+    '10. People often abuse my trust.',
+    '11. I have lost a friend because of irresponsible things I have done.',
+    '12. I have robbed someone.',
+    '13. I have good control over myself.',
+    '14. I have a hard time waiting patiently for things I want.',
+    '15. My impulsive decisions have caused problems with loved ones.',
+    '16. I jump into things without thinking.',
+    '17. I keep appointments I make.',
+    '18. I have often missed things I promised to attend.',
+	'19. I have conned people to get money from them.',
+	'20. I often act on immediate needs.',
+      ]
+	<!-- General Disinhibition.....1, 9, 10, 19, 28, 36, 41, 44, 49, 65, 73, 84, 90(-), 92, 95, 112,  -->
+								<!-- 125(-), 143, 144, 152 -->
+
+
+
+      // Vars that let us show the proper number of items per fullPages
+      // In the event that there are leftover questions, these vars Will
+      // make it to where those last items are shown by themselves
+      var iter = []
+      var iterPos = 0
+      var lastItems = survyQs.length%numPerPage
+      var fullPages = (survyQs.length-lastItems)/numPerPage
+      for (let i = 0; i < fullPages; i++) {
+        iter.push(numPerPage)
+      }
+      iter.push(lastItems)
+	var revNum = survyRs.length+1
+      var sumFunc = (a,b) => a+b
+      var getQs = function(){
+        // Generate the correct number of items to show on screen
+        var QMat = []
+        for (let i = 0; i < iter[iterPos]; i++) {
+          QMat.push({prompt: survyQs[trialnum+i], name: 'ESIBF_disinhibit', options: survyRs, required:true, horizontal: true})
+        }
+          return QMat
+      }
+
+      var trialSave = function(){
+        revCount = [12,16]
+        var scoreMat = []
+        for (let i = 0; i < respMat.length; i++) {
+          if (i == revCount[0]){
+            scoreMat[i] = (respMat[i]*-1)+revNum
+            revCount.shift()
+          } else {
+            scoreMat[i] = respMat[i]
+          }
+        }
+        <!-- var BISTotal = scoreMat.reduce(sumFunc) -->
+		var ESIBF_disinhTotal= 80-scoreMat.reduce(sumFunc)
+
+
+        return {
+          "ESIBF_disinhResp":respMat,
+          "ESIBF_disinhScore":ESIBF_disinhTotal,
+
+        }
+      }
+
+      var instrux = {
+        type: 'html-keyboard-response',
+        stimulus: instructText,
+        response_ends_trial: true
+      }
+
+      var multi_choice_block = {
+        type: 'survey-multi-choice',//'survey-likert',//
+        questions: getQs,
+        //scale_width: 700,
+        on_finish:function(data){
+          trialnum = trialnum + numPerPage
+          iterPos = iterPos+1
+          var trialResp = JSON.parse(data.responses)
+
+          var ind = []
+          for (let i = 0; i < iter[iterPos-1]; i++) {
+            ind.push(trialResp["Q"+i])
+          }
+
+          // Convert strings to numeric values and save
+          for (let i = 0; i < (ind.length); i++) {
+            respMat.push(survyRs.indexOf(ind[i])+1)
+          }
+        }
+      };
+
+      var blackScreen = {
+        type: 'html-keyboard-response',
+        stimulus: '',
+        trial_duration: 500
+      }
+
+      var saveData = {
+        type: 'html-keyboard-response',
+        stimulus: 'You have completed this survey. Press any key to continue...',
+        data: trialSave,
+        response_ends_trial: true
+      }
+
+      timeline.push(instrux)
+      for (let i = 0; i < (iter.length); i++) {
+        timeline.push(multi_choice_block)
+        timeline.push(blackScreen)
+      }
+      timeline.push(saveData)
+
+  	jatos.onLoad(function() {
+  		jsPsych.init({
+  			timeline: timeline,
+
+  			on_finish: function(data){ //edit this for the experiment
+
+          var dataMat = {
+            "ESIBF_disinhResp":jsPsych.data.get().select('ESIBF_disinhResp').values,
+            "ESIBF_disinhScore":jsPsych.data.get().select('ESIBF_disinhScore').values,
+
+          }
+          //console.log(dataMat)
+          //var resultJson1 = jsPsych.data.get().csv(); //filterCustom({Save_Data: 'Save'}).
+          jatos.addJatosIds(dataMat);
+		  var resultJson = JSON.stringify(dataMat);
+          jatos.submitResultData(resultJson, jatos.startNextComponent)
+  			}
+  		});
+  	//}
+
+  });
+  </script>
+  </body>
+  </html>
