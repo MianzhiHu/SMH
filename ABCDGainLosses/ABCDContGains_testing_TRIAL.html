@@ -54,12 +54,12 @@
   // Start Neulog recording
   function startNeuLogRecording() {
     const startApiUrl = 'http://localhost:22004/NeuLogAPI?StartExperiment:[GSR],[1],[5],[1000]';
-
-    fetch(startApiUrl)
+    return fetch(startApiUrl)
             .then(response => response.text())
-            .then(data => console.log('NeuLog recording started:', data))
-            .catch(error => console.error('Error starting NeuLog recording:', error));
+            .then(data => console.log('GSR recording started:', data))
+            .catch(error => console.error('Error starting GSR recording:', error));
   }
+
 
   // Function to end Neulog recording
   function fetchNeuLogData() {
@@ -446,7 +446,7 @@
     choiceMatrix.push(choseOpt.option);
 
     // Show the reward info or just the image selection? Training or test?
-    // The nextFeed var gets the actual feedback info reaady for display. The return shows gives the info needed for the selection animation.
+    // The nextFeed var gets the actual feedback info ready for display. The return shows gives the info needed for the selection animation.
     if (testShow == 0){
       nextFeed = "<div id = '"+choseOpt.stimulusChoseLoc+"'><div id='"+choseOpt.rewardTextLoc+"'><p style='font-size:"+fontsize+"vw;text-align: center;'>"+txt+"</p></div></div>"+
                   "<div class='"+choseOpt.optionTextLoc+"'>"+choseOpt.optionText+"</div>"
@@ -654,8 +654,15 @@
     button_html: getButton,
     choices: getChoices,
     post_trial_gap: 0,
+    on_load: () => {
+      startNeuLogRecording(); // Start GSR recording
+    },
     //trial_duration:250,
     on_finish: function(data) {
+      // Handle the end of the decision-making phase
+      fetchNeuLogData().then(anticipatoryData => {
+        data.anticipatoryGSR = anticipatoryData; // Save anticipatory GSR data
+      });
       totalTime=jsPsych.data.get().select('rt').values
       var trialTime = totalTime[totalTime.length - 1]
       var keyPressed = data.button_pressed;
@@ -675,7 +682,10 @@
     trial_duration: 500,
     post_trial_gap: 0,
     response_ends_trial: false,
-    on_load: boxAnim
+    on_load: () => {
+      boxAnim();
+      startNeuLogRecording(); // Start GSR recording
+    },
   }
 
   var RewardFeed2 = {
@@ -683,7 +693,13 @@
     stimulus: getNextFeed,
     trial_duration: getFeedTime,
     post_trial_gap: 0,
-    response_ends_trial: false
+    response_ends_trial: false,
+    on_finish: function(data) {
+      // Handle the end of the feedback phase
+      fetchNeuLogData().then(outcomeData => {
+        data.outcomeGSR = outcomeData; // Save feedback GSR data
+      });
+    }
   }
 
 
@@ -803,7 +819,8 @@
               "OptionRwdMean": optRwd,
               "OptionOrder": orderMatrix,
               "Phase": jsPsych.data.get().select('trialPhase').values,
-              "NeuLogData": neuLogData
+              "AnticipatoryGSR": jsPsych.data.get().select('anticipatoryGSR').values,
+              "OutcomeGSR": jsPsych.data.get().select('outcomeGSR').values,
             }
 
             var resultJson = JSON.stringify(dataMat);
