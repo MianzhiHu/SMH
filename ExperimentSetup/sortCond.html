@@ -47,10 +47,9 @@
     			var conditionCounts = jatos.componentJsonInput.conditionCounts;
           var conditions = []
     			// Fill the array with conditions according to the counters
-    			fillArrayWithValues(conditions, "Gains", conditionCounts.Gains);
-    			fillArrayWithValues(conditions, "Losses", conditionCounts.Losses);
-          fillArrayWithValues(conditions, "GainsEF", conditionCounts.GainsEF);
-          fillArrayWithValues(conditions, "LossesEF", conditionCounts.LossesEF);
+          fillArrayWithValues(conditions, "Baseline", conditionCounts.Baseline);
+          fillArrayWithValues(conditions, "Frequency", conditionCounts.Frequency);
+          fillArrayWithValues(conditions, "Magnitude", conditionCounts.Magnitude);
 
     			// Put the conditions in the batch session
     			jatos.batchSession.set("conditions", conditions)
@@ -69,19 +68,15 @@
     		var nextComponentPosition;
     		switch (nextCondition) {
 
-          case "Gains":
-    				nextComponentPosition = 14;
+          case "Baseline":
+    				nextComponentPosition = 2;
     				break;
-    			case "Losses":
-    				nextComponentPosition = 15;
-    				break;
-          case "GainsEF":
-      			nextComponentPosition = 16;
-      			break;
-          case "LossesEF":
-    				nextComponentPosition = 17;
-    				break;
-    			
+          case "Frequency":
+              nextComponentPosition = 3;
+              break;
+          case "Magnitude":
+              nextComponentPosition = 4;
+              break;
     		}
 
     		var resultData = {"Condition":nextCondition}

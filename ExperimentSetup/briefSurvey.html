@@ -29,7 +29,7 @@
               <h1>Warning: Javascript seems to be disabled</h1>
               <p>This website requires that Javascript be enabled on your browser.</p>
               <p>Instructions for enabling Javascript in your browser can be found
-              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a></p>
   </noscript>
   <script>
 
@@ -38,7 +38,7 @@
     // Number of survey items wanted to show on screen. Will accept values that produce a remainder
     var instrux = {
       type: 'html-keyboard-response',
-      stimulus: "On the following screen, you will be asked a couple demographic questions and some questions about your surrounds and hardware you are using. When ready, press any key on your keyboard...",
+      stimulus: "On the following screen, you will be asked a couple demographic questions. Whenever you are ready, press any key on your keyboard...",
       response_ends_trial: true
     }
     var surveyEnv = {
@@ -87,7 +87,7 @@
       ],
     };
     var EthnicityQ = ["Not Hispanic or Latino", "Hispanic or Latino", "Prefer not to answer"];
-    var RaceQ = ["American Indian or Alaskan Native", "Asian", "Native Hawaiin or Other Pacific Islander", "Black or African American", "White", "More than one Race", "Prefer not to answer"];
+    var RaceQ = [ "White", "Black or African American", "Asian", "American Indian or Alaskan Native", "Native Hawaiian or Other Pacific Islander", "More than one Race", "Prefer not to answer"];
     var multiEthn = {
       type: 'survey-multi-choice',
       questions: [{
@@ -137,7 +137,7 @@
             "Gender":jsPsych.data.get().select('responses').values[0],
             "Ethnicity":jsPsych.data.get().select('responses').values[1],
             "Race":jsPsych.data.get().select('responses').values[2],
-            "Age":jsPsych.data.get().select('responses').values[4]
+            "Age":jsPsych.data.get().select('responses').values[3]
             //"Country":jsPsych.data.get().select('responses').values[8]
           }
           //console.log(dataMat)
