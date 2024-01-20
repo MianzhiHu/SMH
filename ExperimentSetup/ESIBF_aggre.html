@@ -29,7 +29,7 @@
               <h1>Warning: Javascript seems to be disabled</h1>
               <p>This website requires that Javascript be enabled on your browser.</p>
               <p>Instructions for enabling Javascript in your browser can be found
-              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a></p>
   </noscript>
   <script>
 
@@ -39,36 +39,33 @@
     var numPerPage = 4
     var respMat = []
     var question = ''
-    var instructText = '<p>Read each statement and select the appropriate response to indicate<br> \
-							how you <i>generally</i> feel. There are no right or wrong answers.<br>\
-							Do not spend too much time on any one statement but give the answer<br> \
-							which seems to describe how you <i>generally</i> feel.\
-							</p><p>Press any key to begin...</p>'
-    var survyRs = ['Almost never', 'Sometimes', 'Often', 'Almost always']
+    var instructText = '<p>For the following items, give an answer that best describes how typical or characteristic each item is of you.</p><p>Press any key to begin...</p>'
+    var survyRs = ['True', 'Somewhat true', 'Somewhat false', 'False']
     var survyQs = [
-		'Generally: I feel pleasant',
-		'Generally: I feel nervous and restless',
-		'Generally: I feel satisfied with myself',
-		'Generally: I wish I could be as happy as others seem to be',
-		'Generally: I feel like a failure',
-		'Generally: I feel rested',
-		'Generally: I am "calm, cool, and collected"',
-		'Generally: I feel that difficulties are piling up so that I cannot overcome them',
-		'Generally: I worry too much over something that really doesn\'\t matter',
-		'Generally: I am happy',
-		'Generally: I have disturbing thoughts',
-		'Generally: I lack self confidence',
-		'Generally: I feel secure',
-		'Generally: I make decisions easily',
-		'Generally: I feel inadequate',
-		'Generally: I am content',
-		'Generally: Some unimportant thought runs through my mind and bothers me',
-		'Generally: I take disappointments so keenly that I cannot put them out of my mind',
-		'Generally: I am a steady person',
-		'Generally: I get in a state of tension or turmoil as I think over my recent concerns and interests'
+    '1. I enjoy pushing people around sometimes.',
+    '2. Things are more fun if a little danger is involved.',
+    '3. I sympathize with others’ problems.',
+    '4. I don\'t see any point in worrying if what I do hurts someone else.',
+    '5. I\'ve injured people to see them in pain. ',
+    '6. I sometimes insult people on purpose to get a reaction from them.',
+    '7. It doesn’t bother me to see someone else in pain.',
+    '8. It doesn’t bother me when people around me are hurting.',
+    '9. I taunt people just to stir things up.',
+    '10. I return insults.',
+    '11. I enjoy a good physical fight.',
+    '12. I don\'t have much sympathy for people.',
+    '13. I don’t mind if someone I dislike gets hurt.',
+    '14. How other people feel is important to me.',
+    '15. I don\'t care much if what I do hurts others.',
+    '16. For me, honesty really is the best policy.',
+    '17. I would enjoy being in a high-speed chase.',
+    '18. It’s easy for me to relate to other people’s emotions.',
+	'19. I am sensitive to the feelings of others.'
       ]
 
-      // Vars that let us show the proper number of items per fullPages
+
+
+    // Vars that let us show the proper number of items per fullPages
       // In the event that there are leftover questions, these vars Will
       // make it to where those last items are shown by themselves
       var iter = []
@@ -85,13 +82,13 @@
         // Generate the correct number of items to show on screen
         var QMat = []
         for (let i = 0; i < iter[iterPos]; i++) {
-          QMat.push({prompt: +i+1+trialnum+ '. ' +survyQs[trialnum+i], name: 'STAI-T', options: survyRs, required:true, horizontal: true})
+          QMat.push({prompt: survyQs[trialnum+i], name: 'ESIBF_aggre', options: survyRs, required:true, horizontal: true})
         }
           return QMat
       }
 
       var trialSave = function(){
-        revCount = [1, 3, 6, 7, 10, 13, 14, 16, 19].map(function(i) {return i-1})
+        revCount = [2,13,15,17,18]
         var scoreMat = []
         for (let i = 0; i < respMat.length; i++) {
           if (i == revCount[0]){
@@ -102,13 +99,13 @@
           }
         }
         <!-- var BISTotal = scoreMat.reduce(sumFunc) -->
-		var STAITTotal= scoreMat.reduce(sumFunc)
-
+		var ESIBF_aggreTotal= 76-scoreMat.reduce(sumFunc)
 
 
         return {
-          "STAITResp":respMat,
-          "STAITScore":STAITTotal,
+          "ESIBF_aggreResp":respMat,
+          "ESIBF_aggreScore":ESIBF_aggreTotal,
+
         }
       }
 
@@ -166,8 +163,9 @@
   			on_finish: function(data){ //edit this for the experiment
 
           var dataMat = {
-            "STAITResp":jsPsych.data.get().select('STAITResp').values,
-            "STAITScore":jsPsych.data.get().select('STAITScore').values,
+            "ESIBF_aggreResp":jsPsych.data.get().select('ESIBF_aggreResp').values,
+            "ESIBF_aggreScore":jsPsych.data.get().select('ESIBF_aggreScore').values,
+
           }
           //console.log(dataMat)
           //var resultJson1 = jsPsych.data.get().csv(); //filterCustom({Save_Data: 'Save'}).

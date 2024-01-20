@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <!--Basic HTML info. All plugins and CSS needs to be called -->
+  <title>Experiment</title>
+  <link href="static/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+  <script src="static/js/jspsych-6.0.1/jspsych.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="static/lib/jquery-min.js" type="text/javascript"></script>
+  <script src="static/lib/underscore-min.js" type="text/javascript"></script>
+  <script src="static/lib/backbone-min.js" type="text/javascript"></script>
+  <!--Below is the experiment javascript file -->
+  <script src='jatos.js'></script>
+  <noscript>
+              <h1>Warning: Javascript seems to be disabled</h1>
+              <p>This website requires that Javascript be enabled on your browser.</p>
+              <p>Instructions for enabling Javascript in your browser can be found
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a></p>
+  </noscript>
+  <script>
+
+    var timeline = []
+    var trialnum = 0
+    // Number of survey items wanted to show on screen. Will accept values that produce a remainder
+    var numPerPage = 21
+    var respMat = []
+    var instructText = '<p>This questionnaire consists of 21 groups of statements. Please read each group of statements carefully. And then pick out the one statement in each group that best describes the way you have been feeling during the past two weeks, including today.</p>' +
+            '<br><br>' +
+            '<p>Press any key to begin...</p>'
+    var BDI_Qs = [
+      {question:'1. Sadness', name: 'BDI_sadness', options: ['I do not feel sad.','I feel sad much of the time.','I am sad all of the time.','I am so sad or unhappy that I can\'t stand it.']},
+      {question:'2. Pessimism', name: 'BDI_pessimism', options: ['I am not discouraged about my future.','I feel more discouraged about my future than I used to be.','I do not expect things to work out for me.','I feel my future is hopeless and will only get worse.']},
+      {question:'3. Past Failure', name: 'BDI_pastFailure', options: ['I do not feel like a failure.','I have failed more than I should have.','As I look back, I see a lot of failures.','I feel I am a total failure as a person.']},
+      {question:'4. Loss of Pleasure', name: 'BDI_lossPleasure', options: ['I get as much pleasure as I ever did from the things I enjoy.','I don\'t enjoy things as much as I used to.','I get very little pleasure from the things I used to enjoy.','I can\'t get any pleasure from the things I used to enjoy.']},
+      {question:'5. Guilt', name: 'BDI_guilt', options: ['I don\'t feel particularly guilty.','I feel guilty over many things I have done or should have done.','I feel quite guilty most of the time.','I feel guilty all of the time.']},
+      {question:'6. Punishment', name: 'BDI_punishment', options: ['I don\'t feel I am being punished.','I feel I may be punished.','I expect to be punished.','I feel I am being punished.']},
+      {question:'7. Self-Dislike', name: 'BDI_selfDislike', options: ['I feel the same about myself as ever.','I have lost confidence in myself.','I am disappointed in myself.','I dislike myself.']},
+      {question:'8. Self-Criticalness', name: 'BDI_selfCriticalness', options: ['I don\'t criticize or blame myself more than usual.','I am more critical of myself than I used to be.','I criticize myself for all of my faults.','I blame myself for everything bad that happens.']},
+      {question:'9. Suicidal Thoughts or Wishes', name: 'BDI_suicidalThoughts', options: ['I don\'t have any thoughts of killing myself.','I have thoughts of killing myself, but I would not carry them out.','I would like to kill myself.','I would kill myself if I had the chance.']},
+      {question:'10. Crying', name: 'BDI_crying', options: ['I don\'t cry anymore than I used to.','I cry more than I used to.','I cry over every little thing.','I feel like crying, but I can\'t.']},
+      {question:'11. Agitation', name: 'BDI_agitation', options: ['I am no more restless or wound up than usual.','I feel more restless or wound up than usual.','I am so restless or agitated that it\'s hard to stay still.','I am so restless or agitated that I have to keep moving or doing something.']},
+      {question:'12. Loss of Interest', name: 'BDI_lossInterest', options: ['I have not lost interest in other people or activities.','I am less interested in other people or things than before.','I have lost most of my interest in other people or things.','It\'s hard to get interested in anything.']},
+      {question:'13. Indecisiveness', name: 'BDI_indecisiveness', options: ['I make decisions about as well as ever.','I find it more difficult to make decisions than usual.','I have much greater difficulty in making decisions than I used to.','I have trouble making any decisions.']},
+      {question:'14. Worthlessness', name: 'BDI_worthlessness', options: ['I do not feel I am worthless.','I don\'t consider myself as worthwhile and useful as I used to.','I feel more worthless as compared to other people.','I feel utterly worthless.']},
+      {question:'15. Loss of Energy', name: 'BDI_lossEnergy', options: ['I have as much energy as ever.','I have less energy than I used to have.','I don\'t have enough energy to do very much.','I don\'t have enough energy to do anything.']},
+      {question:'16. Changes in Sleeping Pattern', name: 'BDI_sleepingPattern', options: ['I have not experienced any change in my sleeping pattern.','I sleep somewhat more than usual.','I sleep somewhat less than usual.','I sleep a lot more than usual.']},
+      {question:'17. Irritability', name: 'BDI_irritability', options: ['I am no more irritable than usual.','I am more irritable than usual.','I am much more irritable than usual.','I am irritable all the time.']},
+      {question:'18. Changes in Appetite', name: 'BDI_appetite', options: ['I have not experienced any change in my appetite.','My appetite is somewhat less than usual.','My appetite is somewhat greater than usual.','My appetite is much greater than before.']},
+      {question:'19. Concentration Difficulty', name: 'BDI_concentration', options: ['I can concentrate as well as ever.','I can\'t concentrate as well as usual.','It\'s hard to keep my mind on anything for very long.','I find I can\'t concentrate on anything.']},
+      {question:'20. Tiredness or Fatigue', name: 'BDI_fatigue', options: ['I am no more tired or fatigued than usual.','I get more tired or fatigued more easily than usual.','I am too tired or fatigued to do a lot of the things I used to do.','I am too tired or fatigued to do most of the things I used to do.']},
+      {question:'21. Loss of Interest in Sex', name: 'BDI_lossiInterestSex', options: ['I have not noticed any recent change in my interest in sex.', 'I am less interested in sex than I used to be.', 'I am much less interested in sex now.', 'I have lost interest in sex completely.']}
+      ]
+
+      // Vars that let us show the proper number of items per fullPages
+      // In the event that there are leftover questions, these vars Will
+      // make it to where those last items are shown by themselves
+      var iter = []
+      var iterPos = 0
+      var lastItems = BDI_Qs.length%numPerPage
+      var fullPages = (BDI_Qs.length-lastItems)/numPerPage
+      for (let i = 0; i < fullPages; i++) {
+        iter.push(numPerPage)
+      }
+      iter.push(lastItems)
+
+      var sumFunc = (a,b) => a+b
+      var getQs = function(){
+        return BDI_Qs.map(function(x){
+          return {
+            prompt: x.question,
+            name: x.name,
+            options: x.options,
+            required: true
+          }
+        })
+      }
+
+      var instrux = {
+        type: 'html-keyboard-response',
+        stimulus: instructText,
+        response_ends_trial: true
+      }
+
+      var multi_choice_block = {
+        type: 'survey-multi-choice',
+        questions: getQs,
+        on_finish:function(data){
+          trialnum = trialnum + numPerPage
+          iterPos = iterPos+1
+          var trialResp = JSON.parse(data.responses)
+
+          // Directly push the index of the selected option into respMat
+          for (let i = 0; i < iter[iterPos-1]; i++) {
+            var selectedOption = trialResp["Q"+i];
+            var questionOptions = BDI_Qs[i].options;
+            var selectedIndex = questionOptions.indexOf(selectedOption);
+            // Add 1 to the selected index before pushing it to respMat
+            respMat.push(selectedIndex);
+          }
+
+            var BDI_Total = respMat.reduce(sumFunc)
+
+            // Save BDI_Resp and BDI_Total here
+            jsPsych.data.addDataToLastTrial({
+              "BDI_Resp": respMat,
+              "BDI_Total": BDI_Total
+            });
+          }
+        };
+
+      var EndScreen = {
+        type: 'html-keyboard-response',
+        stimulus: 'You have completed this survey. Press any key to continue...',
+        response_ends_trial: true
+      }
+
+      timeline.push(instrux)
+      timeline.push(multi_choice_block)
+      timeline.push(EndScreen)
+
+  	jatos.onLoad(function() {
+  		jsPsych.init({
+  			timeline: timeline,
+
+  			on_finish: function(data){ //edit this for the experiment
+
+          var dataMat = {
+            "BDI_Resp":jsPsych.data.get().select('BDI_Resp').values,
+            "BDI_Total":jsPsych.data.get().select('BDI_Total').values,
+          }
+          jatos.addJatosIds(dataMat);
+		  var resultJson = JSON.stringify(dataMat);
+          jatos.submitResultData(resultJson, jatos.startNextComponent)
+  			}
+  		});
+  	//}
+
+  });
+  </script>
+  </body>
+  </html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <!--Basic HTML info. All plugins and CSS needs to be called -->
+  <title>Experiment</title>
+  <link href="static/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+  <script src="static/js/jspsych-6.0.1/jspsych.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="static/lib/jquery-min.js" type="text/javascript"></script>
+  <script src="static/lib/underscore-min.js" type="text/javascript"></script>
+  <script src="static/lib/backbone-min.js" type="text/javascript"></script>
+  <!--Below is the experiment javascript file -->
+  <script src='jatos.js'></script>
+  <noscript>
+              <h1>Warning: Javascript seems to be disabled</h1>
+              <p>This website requires that Javascript be enabled on your browser.</p>
+              <p>Instructions for enabling Javascript in your browser can be found
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a></p>
+  </noscript>
+  <script>
+
+    var timeline = []
+    var trialnum = 0
+    // Number of survey items wanted to show on screen. Will accept values that produce a remainder
+    var numPerPage = 21
+    var respMat = []
+    var instructText = '<p>Below is a list of 21 questions again. Please carefully read each item in the list. Indicate how much you have been bothered by that symptom during the past month, including today.</p>' +
+            '<br><br>' +
+            '<p>Press any key to begin...</p>'
+    var BAI_Qs = [
+      {question:'1. Numbness or tingling', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'2. Feeling hot', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'3. Wobbliness in legs', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'4. Unable to relax', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'5. Fear of the worst happening', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'6. Dizzy or lightheaded', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'7. Heart pounding or racing', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'8. Unsteady (as if about to fall)', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'9. Terrified or afraid', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'10. Nervous', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'11. Feeling of choking or smothering', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'12. Hands trembling', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'13. Shaky', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'14. Fear of losing control', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'15. Difficulty Breathing', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'16. Fear of dying', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'17. Scared', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'18. Indigestion or discomfort in abdomen', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'19. Faint', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'20. Face flushed', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']},
+      {question:'21. Sweating (not due to heat)', options:['Not at all', 'Mildly but it did not bother me much', 'Moderately - it wasn\'t pleasant at times', 'Severely - it bothered me a lot']}
+      ]
+
+      // Vars that let us show the proper number of items per fullPages
+      // In the event that there are leftover questions, these vars Will
+      // make it to where those last items are shown by themselves
+      var iter = []
+      var iterPos = 0
+      var lastItems = BAI_Qs.length%numPerPage
+      var fullPages = (BAI_Qs.length-lastItems)/numPerPage
+      for (let i = 0; i < fullPages; i++) {
+        iter.push(numPerPage)
+      }
+      iter.push(lastItems)
+
+      var sumFunc = (a,b) => a+b
+      var getQs = function(){
+        return BAI_Qs.map(function(x){
+          return {
+            prompt: x.question,
+            name: x.name,
+            options: x.options,
+            required: true
+          }
+        })
+      }
+
+      var instrux = {
+        type: 'html-keyboard-response',
+        stimulus: instructText,
+        response_ends_trial: true
+      }
+
+      var multi_choice_block = {
+        type: 'survey-multi-choice',
+        questions: getQs,
+        on_finish:function(data){
+          trialnum = trialnum + numPerPage
+          iterPos = iterPos+1
+          var trialResp = JSON.parse(data.responses)
+
+          // Directly push the index of the selected option into respMat
+          for (let i = 0; i < iter[iterPos-1]; i++) {
+            var selectedOption = trialResp["Q"+i];
+            var questionOptions = BAI_Qs[i].options;
+            var selectedIndex = questionOptions.indexOf(selectedOption);
+            // Add 1 to the selected index before pushing it to respMat
+            respMat.push(selectedIndex);
+          }
+
+            var BAI_Total = respMat.reduce(sumFunc)
+
+            // Save BDI_Resp and BDI_Total here
+            jsPsych.data.addDataToLastTrial({
+              "BAI_Resp": respMat,
+              "BAI_Total": BAI_Total
+            });
+          }
+        };
+
+      var EndScreen = {
+        type: 'html-keyboard-response',
+        stimulus: 'You have completed this survey. Press any key to continue...',
+        response_ends_trial: true
+      }
+
+      timeline.push(instrux)
+      timeline.push(multi_choice_block)
+      timeline.push(EndScreen)
+
+  	jatos.onLoad(function() {
+  		jsPsych.init({
+  			timeline: timeline,
+
+  			on_finish: function(data){ //edit this for the experiment
+
+          var dataMat = {
+            "BAI_Resp":jsPsych.data.get().select('BAI_Resp').values,
+            "BAI_Total":jsPsych.data.get().select('BAI_Total').values,
+          }
+
+          jatos.addJatosIds(dataMat);
+		  var resultJson = JSON.stringify(dataMat);
+          jatos.submitResultData(resultJson, jatos.startNextComponent)
+  			}
+  		});
+  	//}
+
+  });
+  </script>
+  </body>
+  </html>

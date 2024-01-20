@@ -36,6 +36,12 @@
     var timeline = []
 
     // Number of survey items wanted to show on screen. Will accept values that produce a remainder
+    var RemoveDevice = {
+      type: 'html-keyboard-response',
+        stimulus: "Now, you may remove the NeuLog recorder from your finger and softly put it on the desk. Press any key to continue...",
+        response_ends_trial: true
+    }
+
     var instrux = {
       type: 'html-keyboard-response',
       stimulus: "On the following screen, you will be asked a couple demographic questions. Whenever you are ready, press any key on your keyboard...",
@@ -111,6 +117,7 @@
         }],
     }
 
+      timeline.push(RemoveDevice)
       timeline.push(instrux)
       //timeline.push(surveyEnv)
       //timeline.push(multiBrowser)
