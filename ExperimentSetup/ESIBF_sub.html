@@ -34,6 +34,9 @@
   <script>
 
     var timeline = []
+    var creditToken = ''
+    var surveyCode = ''
+    var studyURLID = 'https://tamupsychology.sona-systems.com/webstudy_credit.aspx?experiment_id=3183&credit_token=94d2b4a0f2a647e8ae4bafe146e07e2a&survey_code='
     var trialnum = 0
     // Number of survey items wanted to show on screen. Will accept values that produce a remainder
     var numPerPage = 4
@@ -146,15 +149,55 @@
         response_ends_trial: true
       }
 
+      // // Figures bonus amount if bonus trials were seen.
+      var sumPoint = function() {
+
+        return "<p>You have completed the experiment! Thank you for your time.</p>"+
+                "<p></p>"+//"<p>Since you successfully completed the study, we are giving you an additional bonus of $6.00.</p>"+
+                "<p>Thank you for your time in completing this experiment. Over the course of this experiment you have repeatedly chosen between multiple options. "+
+                "Each of these option pairings had a different mean reward value and the indiviudal rewards that you received varied by a certain degree around this mean value. In "+
+                "the experiment today, we were wanting to see how differing levels of uncertainty of reward values influence choice. Once again, thank you for your time.</p>"+
+                "<p></p>"+
+                "<p>Press the button below to head to a screen where you will get credit for your time...</p>"
+      }
+
+
+      var expEnd = {
+          type:'html-button-response',
+          stimulus:sumPoint,
+          choices: ['CONTINUE'],
+          button_html:['<button class="jspsych-btn-agree">%choice%</button>'],
+          margin_vertical:'20px',
+          data: {debrief: 'debrief'},
+          on_finish: function() {
+            creditToken+=studyURLID
+            creditToken+=surveyCode;
+            console.log(creditToken)
+          }
+        }
+
+        var giveCredit = {
+          type:'html-button-response',
+          stimulus:'Click on the text below for credit.',
+          choices:['Click Here'],
+          button_html: function() {
+            return `<a class="jspsych-btn" type="button" onclick="window.open('${creditToken}', '_blank')">CLICK HERE TO RECEIVE CREDIT</a>`
+          },
+          margin_vertical: '20px'
+        }
+
       timeline.push(instrux)
       for (let i = 0; i < (iter.length); i++) {
         timeline.push(multi_choice_block)
         timeline.push(blackScreen)
       }
       timeline.push(saveData)
+      timeline.push(expEnd)
+      timeline.push(giveCredit)
 
   	jatos.onLoad(function() {
-  		jsPsych.init({
+        surveyCode = jatos.urlQueryParameters.survey_code;
+        jsPsych.init({
   			timeline: timeline,
 
   			on_finish: function(data){ //edit this for the experiment

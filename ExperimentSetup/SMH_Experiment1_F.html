@@ -33,9 +33,6 @@
     <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
   <script>
 
-  var surveyCode = '';
-  var creditToken = '';
-  var studyURLID = 'https://tamupsychology.sona-systems.com/webstudy_credit.aspx?experiment_id=3183&credit_token=94d2b4a0f2a647e8ae4bafe146e07e2a&survey_code='
 
   // Matrices to hold experiment data
   var timeline = []; // Will hold the trial order
@@ -188,7 +185,7 @@
   const RwdMat = [[.70,.30,.70,.30],[.65,.35,.75,.25],[1.95,1.05,2.25,0.75]]
 
   // Define frequency, and number of blocks per trial type
-  var FreqMat = [[20,10],[15,15]] //[[2,1],[1,1]]
+  var FreqMat = [[20,10],[15,15]]
 
   // Get reward values
   var RwdA = RwdMat[RwdType][0]
@@ -388,8 +385,7 @@
         // Return the right labels
         return "<div class='"+leftStim.optionTextLoc+"'>" + leftStim.optionText + "</div>"+
         "<div class='"+rightStim.optionTextLoc+"'>" + rightStim.optionText + "</div>"+
-        showPoint+
-        "<div class = 'promptText'><p>Please choose an option by clicking on one of the boxes above...</p></div>"
+        showPoint
   }
 
 
@@ -540,13 +536,11 @@
   // // Figures bonus amount if bonus trials were seen.
   var sumPoint = function() {
 
-    return "<p>You have completed the experiment! Thank you for your time.</p>"+
-    "<p></p>"+//"<p>Since you successfully completed the study, we are giving you an additional bonus of $6.00.</p>"+
-    "<p>Thank you for your time in completing this experiment. Over the course of this experiment you have repeatedly chosen between multiple options. "+
-    "Each of these option pairings had a different mean reward value and the indiviudal rewards that you received varied by a certain degree around this mean value. In "+
-    "the experiment today, we were wanting to see how differing levels of uncertainty of reward values influence choice. Once again, thank you for your time.</p>"+
-    "<p></p>"+
-    "<p>Press the button below to head to a screen where you will get credit for your time...</p>"
+    return "<p>You have reached the end of the behavioral task! Thank you for your time.</p>"+
+            "<br>"+//"<p>Since you successfully completed the study, we are giving you an additional bonus of $6.00.</p>"+
+            "<p>Now, you may remove the recording device on your fingers and proceed.</p>"+
+            "<br>"+
+            "<p>Press the button below to proceed...</p>"
   }
 
 
@@ -600,47 +594,6 @@
   //     turkID = data.responses
   //   }
   // }
-
-  var ageScreen = {
-    type: 'survey-text',
-    data: {
-      Save_Data: 'Save'
-    },
-    questions: [{
-      prompt: "Please type your age in the box",
-      rows: 1,
-      columns: 5
-    }],
-    on_finish: function(data){
-      //psiturk.recordTrialData(data.responses)
-    }
-  }
-
-  var GenderQ = ["Male", "Female", "Prefer not to respond"];
-  var EthnicityQ = ["Not Hispanic or Latino", "Hispanic or Latino", "Prefer not to answer"];
-  var RaceQ = ["American Indian or Alaskan Native", "Asian", "Native Hawaiin or Other Pacific Islander", "Black or African American", "White", "More than one Race", "Prefer not to answer"];
-  var demographicScreen = {
-    type: 'survey-multi-choice',
-    data: {
-      Save_Data: 'Save'
-    },
-    questions: [{
-        prompt: "Please select your gender",
-        options: GenderQ,
-        required: true
-      },
-      {
-        prompt: "Please select your ethnicity",
-        options: EthnicityQ,
-        required: true
-      },
-      {
-        prompt: "Please select your race",
-        options: RaceQ,
-        required: true
-      }
-    ],
-  };
 
 
   var trainingIntro = {
@@ -700,10 +653,38 @@
       overlay.id = "jspsych-overlay";
       document.body.appendChild(overlay);
 
-      // Remove the overlay after 2 seconds to re-enable clicks
-      setTimeout(function() {
-        document.body.removeChild(document.getElementById("jspsych-overlay"));
-      }, 2000); // 2000 milliseconds = 2 seconds
+      // Create a prompt div and add it to the page
+      var prompt = document.createElement("div");
+      prompt.style.position = "fixed";
+      prompt.style.bottom = "100px";
+      prompt.style.width = "100%";
+      prompt.style.textAlign = "center";
+      prompt.style.fontSize = "2em";
+      prompt.style.color = "white";
+      prompt.id = "jspsych-prompt";
+      document.body.appendChild(prompt);
+
+      // Set initial countdown time
+      var countdown = 2;
+      prompt.textContent = `Please wait ${countdown} seconds before making your choice`;
+
+      // Start countdown timer
+      var countdownTimer = setInterval(function() {
+        countdown--;
+        if (countdown > 0) {
+          prompt.textContent = `Please wait ${countdown} second${countdown === 1 ? '' : 's'} before making your choice`;
+        } else {
+          clearInterval(countdownTimer); // Stop the countdown
+          overlay.style.display = "none"; // Hide the overlay to enable interactions
+          prompt.textContent = "Now please choose an option by clicking on one of the boxes above"; // Update prompt text
+          // Consider removing the prompt after a short delay
+          setTimeout(function() {
+            if (prompt.parentNode) { // Check if the prompt exists in the DOM
+              document.body.removeChild(prompt);
+            }
+          }, 3000); // Remove the prompt after 3 seconds
+        }
+      }, 1000); // Update the prompt every 1 second
     },
 
     on_finish: async function(data) {
@@ -803,13 +784,6 @@
     },
   }
 
-  // // Signal end of the experiment
-  var ExpEnd = {
-    type: 'html-button-response',
-    stimulus: sumPoint,
-    choices:['End']
-  }
-
 
   // var saveData = {
   //   type: 'html-keyboard-response',
@@ -840,22 +814,7 @@
     choices: ['CONTINUE'],
     button_html:['<button class="jspsych-btn-agree">%choice%</button>'],
     margin_vertical:'20px',
-    data: {debrief: 'debrief'},
-    on_finish: function() {
-      creditToken+=studyURLID
-      creditToken+=surveyCode;
-      console.log(creditToken)
-    }
-  }
-
-  var giveCredit = {
-    type:'html-button-response',
-    stimulus:'Click on the text below for credit.',
-    choices:['Click Here'],
-    button_html: function() {
-      return `<a class="jspsych-btn" type="button" onclick="window.open('${creditToken}', '_blank')">CLICK HERE TO RECEIVE CREDIT</a>`
-    },
-    margin_vertical: '20px'
+    data: {debrief: 'debrief'}
   }
 
 
@@ -894,46 +853,38 @@
 
 
   timeline.push(expEnd)
-  timeline.push(giveCredit)
 
 
-  	jatos.onLoad(function() {
-      surveyCode = jatos.urlQueryParameters.survey_code;
-      jsPsych.init({
-        timeline: timeline,
-        on_start: startNeuLogRecording,
-        on_finish: function () {
-          fetchNeuLogData().then(neuLogData => {
-            var dataMat = { // Add a condition variable
-              "ReactTime": reaction,
-              "Reward": rewardMatrix,
-              "BestOption": bestMatrix,
-              "KeyResponse": choiceMatrix,
-              "SetSeen ": allTrials,
-              "OptionRwdMean": optRwd,
-              "OptionOrder": orderMatrix,
-              "Phase": jsPsych.data.get().select('trialPhase').values,
-              "EstOptionA": jsPsych.data.get().select('optionA').values,
-              "OptionAConfidence": jsPsych.data.get().select('optionAConfidence').values,
-              "EstOptionS": jsPsych.data.get().select('optionS').values,
-              "OptionSConfidence": jsPsych.data.get().select('optionSConfidence').values,
-              "EstOptionK": jsPsych.data.get().select('optionK').values,
-              "OptionKConfidence": jsPsych.data.get().select('optionKConfidence').values,
-              "EstOptionL": jsPsych.data.get().select('optionL').values,
-              "OptionLConfidence": jsPsych.data.get().select('optionLConfidence').values,
-              "AnticipatoryGSR": jsPsych.data.get().select('anticipatoryGSR').values,
-              "OutcomeGSR": jsPsych.data.get().select('outcomeGSR').values,
-            }
-
-            var resultJson = JSON.stringify(dataMat);
-            jatos.submitResultData(resultJson, jatos.endStudy);
-          }).catch(error => {
-            console.error('An error occurred:', error);
-            // Handle the error as appropriate for your experiment
-          });
+  jatos.onLoad(function() {
+    jsPsych.init({
+      timeline: timeline,
+      on_finish: function () {
+        var dataMat = { // Add a condition variable
+          "ReactTime": reaction,
+          "Reward": rewardMatrix,
+          "BestOption": bestMatrix,
+          "KeyResponse": choiceMatrix,
+          "SetSeen ": allTrials,
+          "OptionRwdMean": optRwd,
+          "OptionOrder": orderMatrix,
+          "Phase": jsPsych.data.get().select('trialPhase').values,
+          "EstOptionA": jsPsych.data.get().select('optionA').values,
+          "OptionAConfidence": jsPsych.data.get().select('optionAConfidence').values,
+          "EstOptionS": jsPsych.data.get().select('optionS').values,
+          "OptionSConfidence": jsPsych.data.get().select('optionSConfidence').values,
+          "EstOptionK": jsPsych.data.get().select('optionK').values,
+          "OptionKConfidence": jsPsych.data.get().select('optionKConfidence').values,
+          "EstOptionL": jsPsych.data.get().select('optionL').values,
+          "OptionLConfidence": jsPsych.data.get().select('optionLConfidence').values,
+          "AnticipatoryGSR": jsPsych.data.get().select('anticipatoryGSR').values,
+          "OutcomeGSR": jsPsych.data.get().select('outcomeGSR').values,
         }
-      });
-    })
+
+          var resultJson = JSON.stringify(dataMat);
+          jatos.submitResultData(resultJson, jatos.endStudy);
+      }
+    });
+  })
   </script>
   </body>
   </html>
