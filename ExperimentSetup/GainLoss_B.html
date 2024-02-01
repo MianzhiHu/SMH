@@ -27,12 +27,20 @@
 
   <!--Below is the experiment javascript file -->
   <script src='jatos.js'></script>
-  <h1>Warning: Javascript seems to be disabled</h1>
-  <p>This website requires that Javascript be enabled on your browser.</p>
-  <p>Instructions for enabling Javascript in your browser can be found
-    <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+  <noscript>
+              <h1>Warning: Javascript seems to be disabled</h1>
+              <p>This website requires that Javascript be enabled on your browser.</p>
+              <p>Instructions for enabling Javascript in your browser can be found
+              <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a></p>
+  </noscript>
   <script>
 
+
+  // Again, this is not for the SMH study. This is for the gain/loss project.
+  // I just don't want to create a new project in Intellij IDEA.
+  var surveyCode = '';
+  var creditToken = '';
+  var studyURLID = 'https://tamupsychology.sona-systems.com/webstudy_credit.aspx?experiment_id=3183&credit_token=94d2b4a0f2a647e8ae4bafe146e07e2a&survey_code='
 
   // Matrices to hold experiment data
   var timeline = []; // Will hold the trial order
@@ -47,61 +55,6 @@
 
   // Allows use of some math tools for distributions
   new p5()
-
-  // Function to start Neulog recording
-  function startNeuLogRecording() {
-    const startApiUrl = 'http://localhost:22004/NeuLogAPI?StartExperiment:[GSR],[1],[5],[500]';
-    return fetch(startApiUrl)
-            .then(response => response.text())
-            .then(data => console.log('GSR recording started:', data))
-            .catch(error => console.error('Error starting GSR recording:', error));
-  }
-
-
-  // Function to end Neulog recording
-  function fetchNeuLogData() {
-    // Fetch the data from the NeuLog API
-    const dataApiUrl = 'http://localhost:22004/NeuLogAPI?GetExperimentSamples:[GSR],[1]';
-    // URL to stop the NeuLog experiment
-    const stopApiUrl = 'http://localhost:22004/NeuLogAPI?StopExperiment';
-
-    // First, fetch the data
-    return fetch(dataApiUrl)
-            .then(response => response.json()) // Process the response from GetExperimentSamples
-            .then(data => {
-              // After fetching the data, stop the experiment
-              return fetch(stopApiUrl)
-                      .then(response => response.text()) // Process the response from StopExperiment
-                      .then(() => data); // Return the previously fetched data
-            })
-            .catch(error => {
-              console.error('Error in NeuLog data operation:', error);
-              throw error; // Propagate error to be handled later
-            });
-  }
-
-  function stopNeuLogRecording() {
-    // URL to stop the NeuLog experiment
-    const stopApiUrl = 'http://localhost:22004/NeuLogAPI?StopExperiment';
-
-    return fetch(stopApiUrl)
-            .then(response => {
-              if (!response.ok) {
-                throw new Error('Network response was not ok.');
-              }
-              return response.json(); // Parse the JSON response
-            })
-            .then(data => {
-              if (data.StartExperiment === "False") {
-                throw new Error('Failed to stop the NeuLog recording.');
-              }
-              return data; // Continue with the response data if successful
-            })
-            .catch(error => {
-              console.error('Error in NeuLog operation:', error);
-              throw error; // Propagate error to be handled later
-            });
-  }
 
   // Define task settings
   // Study - 0,1
@@ -139,9 +92,9 @@
   // Study 2b-2 - 1,1,1,0
   // Study 2b-3 - 1,1,2,1
   var StudyNum = 0
-  var RwdType = 2
+  var RwdType = 1
   var VarType = 2
-  var FreqType = 0
+  var FreqType = 1
 
   // Experiment parameters and arrays
   var choiceSeen = 0
@@ -162,8 +115,8 @@
   var nextFeed = ''
 
   // How many blocks?
-  var trainBlockNum = 5 //5
-  var testBlockNum = 5 //5
+  var trainBlockNum = 4
+  var testBlockNum = 4
 
 
   // // Define reward values
@@ -182,7 +135,8 @@
 
 // ///// For Study 2, comment out then transfer
   // Define reward values
-  const RwdMat = [[.70,.30,.70,.30],[.65,.35,.75,.25],[1.95,1.05,2.25,0.75]]
+  const RwdMat = [[.70,.30,.70,.30],[.65,.35,.75,.25]]
+
 
   // Define frequency, and number of blocks per trial type
   var FreqMat = [[20,10],[15,15]]
@@ -194,10 +148,10 @@
   var RwdD = RwdMat[RwdType][3]
 
   // get variance values
-  var VarA = 1.29
-  var VarB = 1.29
-  var VarC = 1.29
-  var VarD = 1.29
+  var VarA = .43
+  var VarB = .43
+  var VarC = .43
+  var VarD = .43
 
   var Freq = FreqMat[FreqType]
 
@@ -240,7 +194,7 @@
     var orderMatrix = CDOrder.concat(ABOrder);
   }
 
-  // Randomize order of rewards and variance
+  //Randomize order of rewards and variance
   var varMatrix = [];
   var rwdMatrix = [];
   for (var i = 0; i < 4; i++) {
@@ -385,7 +339,8 @@
         // Return the right labels
         return "<div class='"+leftStim.optionTextLoc+"'>" + leftStim.optionText + "</div>"+
         "<div class='"+rightStim.optionTextLoc+"'>" + rightStim.optionText + "</div>"+
-        showPoint
+        showPoint+
+        "<div class = 'promptText'><p>Please choose an option by clicking on one of the boxes above...</p></div>"
   }
 
 
@@ -467,7 +422,7 @@
     choiceMatrix.push(choseOpt.option);
 
     // Show the reward info or just the image selection? Training or test?
-    // The nextFeed var gets the actual feedback info ready for display. The return shows gives the info needed for the selection animation.
+    // The nextFeed var gets the actual feedback info reaady for display. The return shows gives the info needed for the selection animation.
     if (testShow == 0){
       nextFeed = "<div id = '"+choseOpt.stimulusChoseLoc+"'><div id='"+choseOpt.rewardTextLoc+"'><p style='font-size:"+fontsize+"vw;text-align: center;'>"+txt+"</p></div></div>"+
                   "<div class='"+choseOpt.optionTextLoc+"'>"+choseOpt.optionText+"</div>"
@@ -536,28 +491,34 @@
   // // Figures bonus amount if bonus trials were seen.
   var sumPoint = function() {
 
-    return "<p>You have reached the end of the behavioral task! Thank you for your time.</p>"+
-            "<br>"+//"<p>Since you successfully completed the study, we are giving you an additional bonus of $6.00.</p>"+
-            "<p>Now, you may remove the recording device on your fingers and proceed.</p>"+
-            "<br>"+
-            "<p>Press the button below to proceed...</p>"
+    return "<p>You have completed the experiment! Thank you for your time.</p>"+
+    "<p></p>"+//"<p>Since you successfully completed the study, we are giving you an additional bonus of $6.00.</p>"+
+    "<p>Thank you for your time in completing this experiment. Over the course of this experiment you have repeatedly chosen between multiple options. "+
+    "Each of these option pairings had a different mean reward value and the indiviudal rewards that you received varied by a certain degree around this mean value. In "+
+    "the experiment today, we were wanting to see how differing levels of uncertainty of reward values influence choice. Once again, thank you for your time.</p>"+
+    "<p></p>"+
+    "<p>Press the button below to head to a screen where you will get credit for your time...</p>"
+  }
+
+  var sumPoint1 = function() {
+
+    return "<p>You have completed the first decision-making task! Thank you for your time.</p>"+
+            "<p></p>"+//"<p>Since you successfully completed the study, we are giving you an additional bonus of $6.00.</p>"+
+            "<p>Press the button below to proceed to the questionnaires...</p>"
   }
 
 
   var getTestInstrux = function(){
 
-    return "<p>You have completed the first portion! Now, show your knowledge!</p>"+
-      "<br>"+
-      "<p>In this next phase, you will again be shown four options to choose from. "+
-      "However, this time, the four options will be paired differently. There are 100 trials in total. </p>"+
-      "<p><strong><em>Please read the labels for each option on each trial carefully to make your choice about "+
-      "which option you think is the most rewarding.</strong></em></p>"+
+    return "<p>You have completed the first portion!"+
+      "<p></p>"+
+      "<p>In this next phase, you will again be shown four options to choose from.</p>"+
+      "<p>However, this time, the four options will be paired differently.</p>"+
+      "<p>Please read the labels for each option on each trial carefully to make your choice about "+
+      "which option you think is the most rewarding.</p>"+
+      "<p></p>"+
       "<p>This time we won't show you how many points you earn each round, but try to pick the options you think "+
-      "are the most rewarding based on what you have learned about them.</p>"+
-      "<br>"+
-      "<p><strong><em>Similarly, you will need to wait 2 seconds before making a choice " +
-            "and please avoid randomly clicking around</em></strong></p>"+
-      "<br><br>"+
+      "are the most rewarding, based on what you learned about them in the last round.</p>"+
       "<p>Whenever you are ready, press the button below to continue. </p>"
   }
 
@@ -566,6 +527,14 @@
   // ITI screen
   var trialSave = function() {
     return "<div>Please wait for the next trial...</div>"
+  }
+
+  // was used to change feedback time.
+  var getFeedTime = function(){
+
+      var Ftime = 1500
+
+    return Ftime
   }
 
 
@@ -598,24 +567,14 @@
 
   var trainingIntro = {
     type: "html-keyboard-response",
-    stimulus: "<p style='font-size: 32px;'><strong>Welcome to our experiment!</strong></p>" +
-      "<p>In this study, we are interested in how people are unconsciously informed by their physiological " +
-      "signals when making decisions. On each trial you will be asked to pick from one of two options. "+
-      "Each option has a chance to award you some points, but you could also occasionally lose points. " +
-      "The whole experiment will take around 30 mins. </p>"+
-      "<p>Your job is to gain as many points as you can during the first part of the experiment " +
-      "and figure out which option is the most rewarding one.</p>" +
+    stimulus: "<p>Welcome to our experiment!</p>" +
+      "<p>In this study we are interested in how people use information to make " +
+      "decisions. On each trial you will be asked to pick from one of two options. "+
+      "Each option has a chance to award some points, but you could also occasionally lose points.</p>"+
+      "<p>Your job is to figure out which option in each pair is most rewarding.</p>" +
       "<p>To pick an option, just click on the image box of your choice using your mouse. </p>" +
-      "<br>" +
-      "<p><strong><em>Important:</strong></em></p>" +
-      "<p><strong><em>To ensure successful initialization of the physiological recording, you will be forced to " +
-      "wait 2 seconds before you can make your choice on each trial.</em></strong> " +
-      "Please use this time to make a decision in a way that is close to how you would make a decision in real life.</p>" +
       "<p> </p>" +
-      "<p><strong><em>Throughout the experiment, please try your best to avoid randomly clicking around and only " +
-            "click when you are instructed to do so.</em></strong> This prevents problematic communication " +
-            "with the remotely connected API</p>" +
-      "<br><br>" +
+      "<p> </p>" +
       "<p>Press any key to begin...</p>",
     data: {
       Save_Data: 'NoSave'
@@ -637,64 +596,13 @@
     button_html: getButton,
     choices: getChoices,
     post_trial_gap: 0,
-    on_load: () => {
-      stopNeuLogRecording(); // Although we should have stopped the recording with the fetchNeuLogData function, this is a backup
-      startNeuLogRecording(); // Start GSR recording
-
-      // force the user to stay on the screen for a minimum of 2 seconds
-      // Create an overlay div and add it to the page
-      var overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.top = "0";
-      overlay.style.left = "0";
-      overlay.style.width = "100%";
-      overlay.style.height = "100%";
-      overlay.style.zIndex = "1000"; // Ensure it's on top of other elements
-      overlay.id = "jspsych-overlay";
-      document.body.appendChild(overlay);
-
-      // Create a prompt div and add it to the page
-      var prompt = document.createElement("div");
-      prompt.style.position = "fixed";
-      prompt.style.bottom = "100px";
-      prompt.style.width = "100%";
-      prompt.style.textAlign = "center";
-      prompt.style.fontSize = "2em";
-      prompt.style.color = "white";
-      prompt.id = "jspsych-prompt";
-      document.body.appendChild(prompt);
-
-      // Set initial countdown time
-      var countdown = 2;
-      prompt.textContent = `Please wait ${countdown} seconds before making your choice`;
-
-      // Start countdown timer
-      var countdownTimer = setInterval(function() {
-        countdown--;
-        if (countdown > 0) {
-          prompt.textContent = `Please wait ${countdown} second${countdown === 1 ? '' : 's'} before making your choice`;
-        } else {
-          clearInterval(countdownTimer); // Stop the countdown
-          overlay.style.display = "none"; // Hide the overlay to enable interactions
-          prompt.textContent = "Now please choose an option by clicking on one of the boxes above"; // Update prompt text
-          // Consider removing the prompt after a short delay
-          setTimeout(function() {
-            if (prompt.parentNode) { // Check if the prompt exists in the DOM
-              document.body.removeChild(prompt);
-            }
-          }, 3000); // Remove the prompt after 3 seconds
-        }
-      }, 1000); // Update the prompt every 1 second
-    },
-
-    on_finish: async function(data) {
-      // Handle the end of the decision-making phase
+    //trial_duration:250,
+    on_finish: function(data) {
       totalTime=jsPsych.data.get().select('rt').values
       var trialTime = totalTime[totalTime.length - 1]
       var keyPressed = data.button_pressed;
       dataMatrix.push(keyPressed);
       reaction.push(trialTime)
-      data.anticipatoryGSR = await fetchNeuLogData();
       //console.log(keyPressed)
       //dataMatrix.push(1);
       //reaction.push(500)
@@ -706,29 +614,18 @@
     type: 'html-keyboard-response',
     stimulus: getRewardFeedback,
     data: getDataVal,
-    trial_duration: 100, //500
+    trial_duration: 500,
     post_trial_gap: 0,
     response_ends_trial: false,
-    on_load: () => {
-      boxAnim();
-    },
-    on_finish: () => {
-      stopNeuLogRecording(); // Stop GSR recording
-      startNeuLogRecording()
-    }
+    on_load: boxAnim
   }
-
 
   var RewardFeed2 = {
     type: 'html-keyboard-response',
     stimulus: getNextFeed,
-    trial_duration: 3000, //3000
+    trial_duration: getFeedTime,
     post_trial_gap: 0,
-    response_ends_trial: false,
-    on_finish: async function(data) {
-      // Handle the end of the feedback phase
-      data.outcomeGSR = await fetchNeuLogData();
-    }
+    response_ends_trial: false
   }
 
   // Function to insert a questionnaire
@@ -737,7 +634,7 @@
       type: 'survey-text',
       preamble: "<p>Now, we would like to quickly ask you a few questions about the options you saw during the experiment. " +
               "We ask that you respond to these questions honestly and based on your own intuition.</p>"+
-        "<p><strong><em>After these questions, please continue to make decisions and respond in the experiment as " +
+              "<p><strong><em>After these questions, please continue to make decisions and respond in the experiment as " +
               "you naturally would. Try your best to prevent the questionnaire from " +
               "influencing any aspect of your behavior in the experiment.</em></strong></p>",
       questions: [
@@ -769,8 +666,6 @@
     };
   }
 
-
-
   // Final survey to assess participant knowledge
   var finalSurvey = {
     type: 'survey-text',
@@ -785,16 +680,16 @@
   }
 
 
-  // var saveData = {
-  //   type: 'html-keyboard-response',
-  //   stimulus: trialSave,
-  //   data: {
-  //     Save_Data: 'NoSave'
-  //   },
-  //   trial_duration: 500,
-  //   post_trial_gap: 0, // Remove this too?
-  //   response_ends_trial: false
-  // }
+  var saveData = {
+    type: 'html-keyboard-response',
+    stimulus: trialSave,
+    data: {
+      Save_Data: 'NoSave'
+    },
+    trial_duration: 500,
+    post_trial_gap: 0, // Remove this too?
+    response_ends_trial: false
+  }
 
   // // Signal end of the experiment
   var testInstrux = {
@@ -810,11 +705,26 @@
 
   var expEnd = {
     type:'html-button-response',
-    stimulus:sumPoint,
+    stimulus:sumPoint1,
     choices: ['CONTINUE'],
     button_html:['<button class="jspsych-btn-agree">%choice%</button>'],
     margin_vertical:'20px',
-    data: {debrief: 'debrief'}
+    data: {debrief: 'debrief'},
+    // on_finish: function() {
+    //   creditToken+=studyURLID
+    //   creditToken+=surveyCode;
+    //   console.log(creditToken)
+    // }
+  }
+
+  var giveCredit = {
+    type:'html-button-response',
+    stimulus:'Click on the text below for credit.',
+    choices:['Click Here'],
+    button_html: function() {
+      return `<a class="jspsych-btn" type="button" onclick="window.open('${creditToken}', '_blank')">CLICK HERE TO RECEIVE CREDIT</a>`
+    },
+    margin_vertical: '20px'
   }
 
 
@@ -835,15 +745,15 @@
   timeline.push(trainingIntro);
   //for (let i = 0; i < 150; i++) {
   for (let i = 0; i < allTrials.length; i++) {
-      if (i === trainTrials.length){
+      if (i == trainTrials.length){
         timeline.push(testInstrux)
       }
       timeline.push(trialScreen); // Shows trial, then feedback
       timeline.push(RewardFeed);
       timeline.push(RewardFeed2);
-      //timeline.push(saveData);
+      timeline.push(saveData);
 
-    if ((i + 1) % 25 === 0 && i < trainTrials.length) {
+    if ((i + 1) % 20 === 0 && i < trainTrials.length) {
       timeline.push(KnowledgeQuestionnaire());
     }
   }
@@ -851,40 +761,40 @@
   // final survey
   timeline.push(KnowledgeQuestionnaire());
 
-
   timeline.push(expEnd)
+  // timeline.push(giveCredit)
 
 
-  jatos.onLoad(function() {
-    jsPsych.init({
-      timeline: timeline,
-      on_finish: function () {
-        var dataMat = { // Add a condition variable
-          "ReactTime": reaction,
-          "Reward": rewardMatrix,
-          "BestOption": bestMatrix,
-          "KeyResponse": choiceMatrix,
-          "SetSeen ": allTrials,
-          "OptionRwdMean": optRwd,
-          "OptionOrder": orderMatrix,
-          "Phase": jsPsych.data.get().select('trialPhase').values,
-          "EstOptionA": jsPsych.data.get().select('optionA').values,
-          "OptionAConfidence": jsPsych.data.get().select('optionAConfidence').values,
-          "EstOptionS": jsPsych.data.get().select('optionS').values,
-          "OptionSConfidence": jsPsych.data.get().select('optionSConfidence').values,
-          "EstOptionK": jsPsych.data.get().select('optionK').values,
-          "OptionKConfidence": jsPsych.data.get().select('optionKConfidence').values,
-          "EstOptionL": jsPsych.data.get().select('optionL').values,
-          "OptionLConfidence": jsPsych.data.get().select('optionLConfidence').values,
-          "AnticipatoryGSR": jsPsych.data.get().select('anticipatoryGSR').values,
-          "OutcomeGSR": jsPsych.data.get().select('outcomeGSR').values,
-        }
+  	jatos.onLoad(function() {
+      // surveyCode = jatos.urlQueryParameters.survey_code;
+  		jsPsych.init({
+  			timeline: timeline,
+  			on_finish: function(data){
+
+          var dataMat = { // Add a condition variable
+            "ReactTime": reaction,
+            "Reward": rewardMatrix,
+            "BestOption": bestMatrix,
+            "KeyResponse": choiceMatrix,
+            "SetSeen ": allTrials,
+            "OptionRwdMean":optRwd,
+            "OptionOrder":orderMatrix,
+            "Phase":jsPsych.data.get().select('trialPhase').values,
+            "EstOptionA": jsPsych.data.get().select('optionA').values,
+            "OptionAConfidence": jsPsych.data.get().select('optionAConfidence').values,
+            "EstOptionS": jsPsych.data.get().select('optionS').values,
+            "OptionSConfidence": jsPsych.data.get().select('optionSConfidence').values,
+            "EstOptionK": jsPsych.data.get().select('optionK').values,
+            "OptionKConfidence": jsPsych.data.get().select('optionKConfidence').values,
+            "EstOptionL": jsPsych.data.get().select('optionL').values,
+            "OptionLConfidence": jsPsych.data.get().select('optionLConfidence').values,
+          }
 
           var resultJson = JSON.stringify(dataMat);
-          jatos.submitResultData(resultJson, jatos.endStudy);
-      }
-    });
-  })
+          jatos.submitResultData(resultJson, jatos.endStudy)
+  			}
+  		});
+  });
   </script>
   </body>
   </html>
