@@ -698,7 +698,7 @@
 
   var expEnd = {
     type:'html-button-response',
-    stimulus:sumPoint,
+    stimulus:sumPoint1,
     choices: ['CONTINUE'],
     button_html:['<button class="jspsych-btn-agree">%choice%</button>'],
     margin_vertical:'20px',
@@ -755,11 +755,11 @@
   timeline.push(KnowledgeQuestionnaire());
 
   timeline.push(expEnd)
-  timeline.push(giveCredit)
+  // timeline.push(giveCredit)
 
 
   	jatos.onLoad(function() {
-      surveyCode = jatos.urlQueryParameters.survey_code;
+      // surveyCode = jatos.urlQueryParameters.survey_code;
   		jsPsych.init({
   			timeline: timeline,
   			on_finish: function(data){
@@ -784,7 +784,7 @@
           }
 
           var resultJson = JSON.stringify(dataMat);
-          jatos.submitResultData(resultJson, jatos.endStudy)
+          jatos.submitResultData(resultJson, jatos.startNextComponent);
   			}
   		});
   });
