@@ -573,6 +573,7 @@
       "Each option has a chance to award some points, but you could also occasionally lose points.</p>"+
       "<p>Your job is to figure out which option in each pair is most rewarding.</p>" +
       "<p>To pick an option, just click on the image box of your choice using your mouse. </p>" +
+      "<p><strong><em>Please keep your phone away at all times during the experiment </em></strong></p>" +
       "<p> </p>" +
       "<p> </p>" +
       "<p>Press any key to begin...</p>",
@@ -710,11 +711,11 @@
     button_html:['<button class="jspsych-btn-agree">%choice%</button>'],
     margin_vertical:'20px',
     data: {debrief: 'debrief'},
-    // on_finish: function() {
-    //   creditToken+=studyURLID
-    //   creditToken+=surveyCode;
-    //   console.log(creditToken)
-    // }
+    on_finish: function() {
+      creditToken+=studyURLID
+      creditToken+=surveyCode;
+      console.log(creditToken)
+    }
   }
 
   var giveCredit = {

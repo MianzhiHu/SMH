@@ -40,7 +40,7 @@
   // I just don't want to create a new project in Intellij IDEA.
   var surveyCode = '';
   var creditToken = '';
-  var studyURLID = 'https://tamupsychology.sona-systems.com/webstudy_credit.aspx?experiment_id=3183&credit_token=94d2b4a0f2a647e8ae4bafe146e07e2a&survey_code='
+  var studyURLID = 'https://tamupsychology.sona-systems.com/webstudy_credit.aspx?experiment_id=3977&credit_token=90058933153f4cec9b63afb281f3ac75&survey_code='
 
   // Matrices to hold experiment data
   var timeline = []; // Will hold the trial order
@@ -500,6 +500,12 @@
     "<p>Press the button below to head to a screen where you will get credit for your time...</p>"
   }
 
+  var sumPoint1 = function() {
+
+    return "<p>You have completed the first decision-making task! Thank you for your time.</p>"+
+            "<p></p>"+//"<p>Since you successfully completed the study, we are giving you an additional bonus of $6.00.</p>"+
+            "<p>Press the button below to proceed to the questionnaires...</p>"
+  }
 
   var getTestInstrux = function(){
 
@@ -566,6 +572,7 @@
       "Each option has a chance to award some points, but you could also occasionally lose points.</p>"+
       "<p>Your job is to figure out which option in each pair is most rewarding.</p>" +
       "<p>To pick an option, just click on the image box of your choice using your mouse. </p>" +
+      "<p><strong><em>Please keep your phone away at all times during the experiment </em></strong></p>" +
       "<p> </p>" +
       "<p> </p>" +
       "<p>Press any key to begin...</p>",
