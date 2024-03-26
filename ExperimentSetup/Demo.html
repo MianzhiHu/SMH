@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex">
+  <!--Basic HTML info. All plugins and CSS needs to be called -->
+  <title>Experiment</title>
+  <link href="static/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+  <script src="static/js/jspsych-6.0.1/jspsych.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-select.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="static/js/jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src="p5.js" type="text/javascript"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="static/lib/jquery-min.js" type="text/javascript"></script>
+  <script src="static/lib/underscore-min.js" type="text/javascript"></script>
+  <script src="static/lib/backbone-min.js" type="text/javascript"></script>
+
+  <!--Below is the experiment javascript file -->
+  <script src='jatos.js'></script>
+  <h1>Warning: Javascript seems to be disabled</h1>
+  <p>This website requires that Javascript be enabled on your browser.</p>
+  <p>Instructions for enabling Javascript in your browser can be found
+    <a href="http://support.google.com/bin/answer.py?hl=en&answer=23852">here</a><p>
+  <script>
+
+
+  // Matrices to hold experiment data
+  var timeline = []; // Will hold the trial order
+  var dataMatrix = []; // Holds javascript key press numbers to determine what option was choose in the previous trial
+  var reaction = [];
+
+
+  // Experiment parameters and arrays
+  var trialnum = 0;
+  var rewardTotal = 0;
+  var fontsize = 2
+
+  // Set up data arrays
+  var stimuli = []
+  var choseStim = []
+
+// Array to hold two stimuli pictures
+  var stimArray = [
+    ['static/stims/fractal1.jpg', 'static/stims/fractal1select.png'],
+    ['static/stims/fractal2.jpg', 'static/stims/fractal2select.png'],
+  ];
+
+  // randomize and select four images
+  var stims = [stimArray[0],stimArray[1]]
+  //console.log(stims)
+  jsPsych.pluginAPI.preloadImages(stims);
+
+  // set a fixed sequence of outcomes for the stimuli
+  var fixedOutcomeSequence = [5, 10, -30, 8, 9, 3, 6, 10, 12, -28]
+  var outcomeIndex = 0
+  var numTrials = fixedOutcomeSequence.length;
+
+  // Add all stim information into objects
+  var stimA={
+    stimulus:stims[0][0],
+    optionText:'Option A',
+    optionTextLoc:'centeredText1',
+    optionLoc:'centered1',
+    optionKey:'a',
+    rewardTextLoc:'rwdText1',
+    stimulusChose:stims[0][1],
+    stimulusChoseLoc:'centered1chose'
+  }
+  var stimB={
+    stimulus:stims[1][0],
+    optionText:'Option B',
+    optionTextLoc:'centeredText4',
+    optionLoc:'centered4',
+    optionKey:'b',
+    rewardTextLoc:'rwdText2',
+    stimulusChose:stims[1][1],
+    stimulusChoseLoc:'centered4chose'
+  }
+
+
+  // Get the right simuli based on trial order and trial type
+  var getStim = function() {
+
+    // Assuming we still want to show the accumulated rewardTotal
+    var totalRwd = rewardTotal.toFixed(2);
+
+    // Determine whether to show points total
+    var showPoint = "<div id='bankPos'>Total: " + totalRwd + "</div>";
+
+    // Return the HTML string with both options and possibly the total reward points
+    return "<div class='" + stimA.optionTextLoc + "'>" + stimA.optionText + "</div>" +
+            "<div class='" + stimB.optionTextLoc + "'>" + stimB.optionText + "</div>" +
+            showPoint;
+  }
+
+
+  // Get the right stimuli images to show and use as buttons
+  var getButton = function() {
+      return ["<img id='"+stimA.optionLoc+"' src= '" + stimA.stimulus + "'style='width: 250px; height: auto'>",
+              "<img id='"+stimB.optionLoc+"' src= '" + stimB.stimulus + "'style='width: 250px; height: auto'>"]
+  }
+
+  // This function opens up the right keys for responses
+  var getChoices = function() {
+
+      return [stimA.optionKey,stimB.optionKey]
+  }
+
+
+  // function to figure reward receipt
+  var getReward = function() {
+    // Retrieve the next outcome from the sequence
+    if (outcomeIndex >= fixedOutcomeSequence.length) {
+      outcomeIndex = 0; // Reset or handle the end of the sequence as needed
+    }
+    var trialReward = fixedOutcomeSequence[outcomeIndex++];
+    return trialReward; // Or directly use this where displaying the outcome
+  };
+
+
+  // // Figures bonus amount if bonus trials were seen.
+  var sumPoint = function() {
+
+    return "<p>You have reached the end of our DEMO experiment! Thank you for your time.</p>"
+  }
+
+
+
+  var welcome = {
+    type: "html-keyboard-response",
+    stimulus: "<p style='font-size: 32px;'><strong>Welcome to our DEMO experiment!</strong></p>" +
+      "<p>In our lab, we are interested in how people are unconsciously informed by their physiological " +
+      "signals when making decisions. On each trial you will be asked to pick from one of two options.</p> "+
+      "<p>Each option has a chance to award you some points, but you could also occasionally lose points.</p>"+
+      "<p>Your job is to gain as many points as you can and figure out which option is the most rewarding one.</p>" +
+      "<p>To pick an option, just click on the image box of your choice using your mouse. </p>" +
+      "<p>Press any key to begin...</p>",
+    data: {
+      Save_Data: 'NoSave'
+    },
+    post_trial_gap: 1000,
+  };
+
+
+  var trialScreen = {
+    type: 'html-button-response',
+    data: {
+      Save_Data: 'NoSave'
+    },
+    stimulus: getStim,
+    button_html: getButton,
+    choices: getChoices,
+    response_ends_trial: true,
+    post_trial_gap: 0,
+    on_load: () => {
+
+      // force the user to stay on the screen for a minimum of 2 seconds
+      // Create an overlay div and add it to the page
+      var overlay = document.createElement("div");
+      overlay.style.position = "fixed";
+      overlay.style.top = "0";
+      overlay.style.left = "0";
+      overlay.style.width = "100%";
+      overlay.style.height = "100%";
+      overlay.style.zIndex = "1000"; // Ensure it's on top of other elements
+      overlay.id = "jspsych-overlay";
+      document.body.appendChild(overlay);
+
+      // Create a prompt div and add it to the page
+      var prompt = document.createElement("div");
+      prompt.style.position = "fixed";
+      prompt.style.bottom = "100px";
+      prompt.style.width = "100%";
+      prompt.style.textAlign = "center";
+      prompt.style.fontSize = "2em";
+      prompt.style.color = "white";
+      prompt.id = "jspsych-prompt";
+      document.body.appendChild(prompt);
+
+      // Set initial countdown time
+      var countdown = 2;
+      prompt.textContent = `Please wait ${countdown} seconds before making your choice`;
+
+      // Start countdown timer
+      var countdownTimer = setInterval(function() {
+        countdown--;
+        if (countdown > 0) {
+          prompt.textContent = `Please wait ${countdown} second${countdown === 1 ? '' : 's'} before making your choice`;
+        } else {
+          clearInterval(countdownTimer); // Stop the countdown
+          overlay.style.display = "none"; // Hide the overlay to enable interactions
+          prompt.textContent = "Now please choose an option by clicking on one of the boxes above"; // Update prompt text
+          // Consider removing the prompt after a short delay
+          setTimeout(function() {
+            if (prompt.parentNode) { // Check if the prompt exists in the DOM
+              document.body.removeChild(prompt);
+            }
+          }, 3000); // Remove the prompt after 3 seconds
+        }
+      }, 1000); // Update the prompt every 1 second
+
+      // immediately remove the prompt if the user makes a click
+        document.addEventListener('click', function() {
+          if (countdown<=0){
+            if (prompt.parentNode) {
+                document.body.removeChild(prompt);
+              }
+            }
+        });
+    },
+    on_finish: function(data){
+      var keyPressed = data.button_pressed;
+      dataMatrix.push(keyPressed);
+    }
+  };
+
+  // Simplify the feedback presentation to directly use the outcome from `getReward`
+  var rewardScreen = {
+    type: 'html-keyboard-response',
+    stimulus: function() {
+      var rewardValue = getReward();
+        rewardTotal += rewardValue;
+      // Ensure your stimulus HTML includes an element with an ID for boxAnim to target
+      return `<div id="rewardFeedback" style="font-size:24px;">You earned ${rewardValue} points!</div>`;
+    },
+    choices: jsPsych.NO_KEYS,
+    trial_duration: 2500,
+  };
+
+
+  var expEnd = {
+    type:'html-button-response',
+    stimulus:sumPoint,
+    response_ends_trial: true,
+    choices: ['END'],
+    button_html:['<button class="jspsych-btn-agree">%choice%</button>'],
+    margin_vertical:'20px',
+  }
+
+
+  timeline.push(welcome);
+
+  // Loop to add each trial to the timeline
+  for (let i = 0; i < numTrials; i++) {
+    timeline.push(trialScreen); // Trial screen with the two options
+    timeline.push(rewardScreen); // Screen showing the outcome from fixed sequence
+  }
+
+
+  timeline.push(expEnd)
+
+
+  	jatos.onLoad(function() {
+      jsPsych.init({
+        timeline: timeline,
+        on_finish: function () {
+          var dataMat = { // Add a condition variable
+            "KeyResponse": dataMatrix,
+            }
+
+            var resultJson = JSON.stringify(dataMat);
+            jatos.submitResultData(resultJson, jatos.endStudy);
+        }
+      });
+    })
+  </script>
+  </body>
+  </html>
