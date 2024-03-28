@@ -43,11 +43,11 @@
   // Experiment parameters and arrays
   var trialnum = 0;
   var rewardTotal = 0;
-  var fontsize = 2
+  var fontsize = 2;
+  var currentRewardValue = 0;
 
   // Set up data arrays
   var stimuli = []
-  var choseStim = []
 
 // Array to hold two stimuli pictures
   var stimArray = [
@@ -62,7 +62,7 @@
 
   // set a fixed sequence of outcomes for the stimuli
   var fixedOutcomeSequence = [5, 10, -30, 8, 9, 3, 6, 10, 12, -28]
-  var outcomeIndex = 0
+  var outcomeIndex = 0;
   var numTrials = fixedOutcomeSequence.length;
 
   // Add all stim information into objects
@@ -121,7 +121,7 @@
   var getReward = function() {
     // Retrieve the next outcome from the sequence
     if (outcomeIndex >= fixedOutcomeSequence.length) {
-      outcomeIndex = 0; // Reset or handle the end of the sequence as needed
+      outcomeIndex = 1; // Reset or handle the end of the sequence as needed
     }
     var trialReward = fixedOutcomeSequence[outcomeIndex++];
     return trialReward; // Or directly use this where displaying the outcome
@@ -143,7 +143,7 @@
       "signals when making decisions. On each trial you will be asked to pick from one of two options.</p> "+
       "<p>Each option has a chance to award you some points, but you could also occasionally lose points.</p>"+
       "<p>Your job is to gain as many points as you can and figure out which option is the most rewarding one.</p>" +
-      "<p>To pick an option, just click on the image box of your choice using your mouse. </p>" +
+      "<p>To pick an option, just click on the image box of your choice using your mouse.<strong> You have to wait 2 seconds before making a choice.</strong></p>" +
       "<p>Press any key to begin...</p>",
     data: {
       Save_Data: 'NoSave'
@@ -225,17 +225,37 @@
   };
 
   // Simplify the feedback presentation to directly use the outcome from `getReward`
+  currentRewardValue = getReward();
   var rewardScreen = {
     type: 'html-keyboard-response',
     stimulus: function() {
-      var rewardValue = getReward();
-        rewardTotal += rewardValue;
-      // Ensure your stimulus HTML includes an element with an ID for boxAnim to target
-      return `<div id="rewardFeedback" style="font-size:24px;">You earned ${rewardValue} points!</div>`;
+      // Directly use the global variable
+      rewardTotal += currentRewardValue;
+
+      if (currentRewardValue < 0) {
+        return `<div id="rewardFeedback" style="font-size:24px; color:red; font-weight: bold">You lost ${currentRewardValue} points!</div>`;
+      }
+      else {
+        return `<div id="rewardFeedback" style="font-size:24px;">You earned ${currentRewardValue} points!</div>`;
+      }
     },
     choices: jsPsych.NO_KEYS,
-    trial_duration: 2500,
+    trial_duration: function() {
+      // Directly use the global variable
+      if (currentRewardValue < 0) {
+        return 5000;
+      }
+      else {
+        return 2500;
+      }
+    },
+    on_load: function() {
+      // Update the global variable
+      currentRewardValue = getReward();
+      // console.log(currentRewardValue);
+    }
   };
+
 
 
   var expEnd = {

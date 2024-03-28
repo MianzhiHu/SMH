@@ -177,3 +177,6 @@ knowledge_df[new_confidence_cols] = knowledge_df[new_confidence_cols].apply(lamb
 # # Call the function to preprocess the data
 # data, knowledge = preprocess_data(main_folder_directory, behavioral_list, other_data_list, numeric_list, dict_list,
 #                                   estimate=True, cutoff=2)
+
+
+data = pd.read_csv('./Data/prelim_data.csv')
