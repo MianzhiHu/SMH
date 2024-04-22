@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.stats import ttest_ind
 
 
 def processGSR(df, standardize=None, draw=False, separate=False):
@@ -59,3 +60,30 @@ def area_under_curve(data):
         auc_ant.append(auc_per_second)
 
     return auc_ant
+
+
+def pairwise_t_test_GSR(df, GSR_type, data_type, trial_type=None):
+    for condition in ['Baseline', 'Frequency', 'Magnitude']:
+        print(condition)
+
+        if data_type == 'training':
+            data_selected = df[df['Condition'] == condition]
+            for phase in ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5', 'Phase 6']:
+                print(phase)
+                print(ttest_ind(
+                    data_selected[(data_selected['BestOption'] == 0) & (data_selected['Phase'] == phase)][GSR_type],
+                    data_selected[(data_selected['BestOption'] == 1) & (data_selected['Phase'] == phase)][GSR_type]))
+                print('Outcome GSR for the optimal option:',
+                      data_selected[(data_selected['BestOption'] == 1) & (data_selected['Phase'] == phase)][
+                          'OutcomeGSRAUC'].mean())
+                print('Outcome GSR for the suboptimal option:',
+                      data_selected[(data_selected['BestOption'] == 0) & (data_selected['Phase'] == phase)][
+                          'OutcomeGSRAUC'].mean())
+                print()
+
+        elif data_type == 'testing':
+            data_selected = df[(df['Condition'] == condition) & (df['SetSeen '] == trial_type)]
+            print(ttest_ind(data_selected[data_selected['BestOption'] == 0][GSR_type],
+                            data_selected[data_selected['BestOption'] == 1][GSR_type]))
+            print('Anticipatory GSR for C:', data_selected[data_selected['BestOption'] == 1][GSR_type].mean())
+            print('Anticipatory GSR for A:', data_selected[data_selected['BestOption'] == 0][GSR_type].mean())

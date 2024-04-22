@@ -19,6 +19,9 @@ prop_optimal = df.groupby(['Subnum', 'Condition', 'SetSeen '])['BestOption'].mea
 # plot the percentage of selecting the best option
 x_labels = ['AB', 'CD', 'CA', 'CB', 'AD', 'BD']
 
+# set the order of the conditions
+prop_optimal['Condition'] = pd.Categorical(prop_optimal['Condition'], categories=['Baseline', 'Frequency', 'Magnitude'], ordered=True)
+
 sns.barplot(data=prop_optimal, x='SetSeen ', y='BestOption', hue='Condition')
 plt.xticks(np.arange(6), x_labels)
 plt.title('Percentage of selecting the best option')

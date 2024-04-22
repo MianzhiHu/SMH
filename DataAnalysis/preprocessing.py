@@ -7,7 +7,7 @@ from utilities.utility_processGSR import processGSR, area_under_curve
 # parse the data
 data = []
 
-with open('./Data/jatos_results_20240405174947.txt', 'r') as file:
+with open('./Data/jatos_results_20240422185445.txt', 'r') as file:
     for line in file:
         json_data = json.loads(line)
         data.append(json_data)
