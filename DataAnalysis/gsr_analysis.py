@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.stats import ttest_ind
 import seaborn as sns
 import matplotlib.pyplot as plt
-from utilities.utility_processGSR import processGSR, area_under_curve
+from utilities.utility_processGSR import processGSR, area_under_curve, pairwise_t_test_GSR
 
 
 # load processed data
@@ -42,40 +42,15 @@ ttest_ind(training_data[training_data['Loss'] == 0]['OutcomeGSRAUC'], training_d
 print('Outcome GSR for the losses:', training_data[training_data['Loss'] == 1]['OutcomeGSRAUC'].mean())
 print('Outcome GSR for the wins:', training_data[training_data['Loss'] == 0]['OutcomeGSRAUC'].mean())
 
-# now analyze anticipatory GSR
-for condition in ['Baseline', 'Frequency', 'Magnitude']:
-    print(condition)
-    data_selected = training_data[training_data['Condition'] == condition]
-    for phase in ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5', 'Phase 6']:
-        print(phase)
-        print(ttest_ind(data_selected[(data_selected['BestOption'] == 0) & (data_selected['Phase'] == phase)]['AnticipatoryGSRAUC'],
-                        data_selected[(data_selected['BestOption'] == 1) & (data_selected['Phase'] == phase)]['AnticipatoryGSRAUC']))
-        print('Anticipatory GSR for the optimal option:', data_selected[(data_selected['BestOption'] == 1) & (data_selected['Phase'] == phase)]['AnticipatoryGSRAUC'].mean())
-        print('Anticipatory GSR for the suboptimal option:', data_selected[(data_selected['BestOption'] == 0) & (data_selected['Phase'] == phase)]['AnticipatoryGSRAUC'].mean())
-        print()
-
-for condition in ['Baseline', 'Frequency', 'Magnitude']:
-    print(condition)
-    data_selected = training_data[training_data['Condition'] == condition]
-    for phase in ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5', 'Phase 6']:
-        print(phase)
-        print(ttest_ind(data_selected[(data_selected['BestOption'] == 0) & (data_selected['Phase'] == phase)]['OutcomeGSRAUC'],
-                        data_selected[(data_selected['BestOption'] == 1) & (data_selected['Phase'] == phase)]['OutcomeGSRAUC']))
-        print('Outcome GSR for the optimal option:', data_selected[(data_selected['BestOption'] == 1) & (data_selected['Phase'] == phase)]['OutcomeGSRAUC'].mean())
-        print('Outcome GSR for the suboptimal option:', data_selected[(data_selected['BestOption'] == 0) & (data_selected['Phase'] == phase)]['OutcomeGSRAUC'].mean())
-        print()
-
+# now analyze anticipatory and outcome GSR
+# there doesn't seem to be a significant difference
+pairwise_t_test_GSR(training_data, 'AnticipatoryGSRAUC', 'training')
+pairwise_t_test_GSR(training_data, 'OutcomeGSRAUC', 'training')
 
 # CA trials
-for condition in ['Baseline', 'Frequency', 'Magnitude']:
-    print(condition)
-    data_selected = test_data[(test_data['Condition'] == condition) & (test_data['SetSeen '] == 2)]
-    print(ttest_ind(data_selected[data_selected['BestOption'] == 0]['AnticipatoryGSRAUC'],
-                    data_selected[data_selected['BestOption'] == 1]['AnticipatoryGSRAUC']))
-    print('Anticipatory GSR for C:', data_selected[data_selected['BestOption'] == 1]['AnticipatoryGSRAUC'].mean())
-    print('Anticipatory GSR for A:', data_selected[data_selected['BestOption'] == 0]['AnticipatoryGSRAUC'].mean())
+pairwise_t_test_GSR(test_data, 'AnticipatoryGSRAUC', 'testing', 2)
 
-
+ts_ant_gsr, ts_out_gsr = processGSR(df, draw=True, separate=True)
 
 
 

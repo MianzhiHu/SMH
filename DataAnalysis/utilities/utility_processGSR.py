@@ -49,8 +49,12 @@ def processGSR(df, standardize=None, draw=False, separate=False):
     return ts_ant_gsr, ts_out_gsr
 
 
-def area_under_curve(data):
+# extract the GSR data
+def extract_samples(d):
+    return d['GetExperimentSamples'][0][2:]  # Skip the first two elements ('GSR' and 1)
 
+
+def area_under_curve(data):
     auc_ant = []
 
     for i in range(data.shape[1]):
@@ -60,6 +64,15 @@ def area_under_curve(data):
         auc_ant.append(auc_per_second)
 
     return auc_ant
+
+
+# Function to apply the mapping
+def check_best_option(row, mapping):
+    trial = row['SetSeen ']
+    response = row['KeyResponse']
+    if trial in mapping and response == mapping[trial]:
+        return 1  # Best option chosen
+    return 0  # Best option not chosen
 
 
 def pairwise_t_test_GSR(df, GSR_type, data_type, trial_type=None):

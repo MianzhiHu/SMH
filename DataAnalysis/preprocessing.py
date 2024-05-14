@@ -1,8 +1,16 @@
 import pandas as pd
-import ast
 import numpy as np
+import ast
+import matplotlib.pyplot as plt
+import requests
+import seaborn as sns
 import json
-from utilities.utility_processGSR import processGSR, area_under_curve
+import io
+import contextlib
+from utilities.utility_processGSR import processGSR, area_under_curve, extract_samples, check_best_option
+from scipy.signal import butter, filtfilt, welch
+from utilities.pyEDA.main import *
+
 
 # parse the data
 data = []
@@ -41,7 +49,7 @@ print(f'Missing data percentage in AnticipatoryGSR: '
       f'{(1 - df["AnticipatoryGSR"].apply(lambda x: len(x)).value_counts()[250] / len(df)) * 100:.2f}%')
 print(df['OutcomeGSR'].apply(lambda x: len(x)).value_counts())
 print(f'Missing data percentage in OutcomeGSR: '
-        f'{(1 - df["OutcomeGSR"].apply(lambda x: len(x)).value_counts()[250] / len(df)) * 100:.2f}%')
+      f'{(1 - df["OutcomeGSR"].apply(lambda x: len(x)).value_counts()[250] / len(df)) * 100:.2f}%')
 
 # remove data where either anticipatory or outcome GSR has less than 250 data points
 df = df[(df['AnticipatoryGSR'].apply(lambda x: len(x)) == 250) & (df['OutcomeGSR'].apply(lambda x: len(x)) == 250)]
@@ -55,20 +63,68 @@ df[personality_list] = df[personality_list].applymap(lambda x: x[0] if x else np
 # extract the demographic data from dictionary-like strings
 df[demo_list] = df[demo_list].applymap(lambda x: ast.literal_eval(x).get('Q0', None) if x else np.nan)
 
-
 # extract the GSR data
-def extract_samples(d):
-    return d['GetExperimentSamples'][0][2:]  # Skip the first two elements ('GSR' and 1)
-
-
 df[GSR_list] = df[GSR_list].applymap(extract_samples)
-
 
 # calculate the area under the curve for each GSR data
 df[GSR_list] = df[GSR_list].applymap(str)
 ts_ant_gsr, ts_out_gsr = processGSR(df)
-df['AnticipatoryGSRAUC'] = area_under_curve(ts_ant_gsr)
-df['OutcomeGSRAUC'] = area_under_curve(ts_out_gsr)
+
+# apply the preprocessing function to each column of the dataframes
+tonic_ant_gsr = []
+tonic_out_gsr = []
+phasic_ant_gsr = []
+phasic_out_gsr = []
+
+for i, gsr_data in enumerate([ts_ant_gsr, ts_out_gsr]):
+    for j in range(gsr_data.shape[1]):
+
+        batch_size = 500
+
+        if j % batch_size == 0:
+            print(f'Processing column {j}/{gsr_data.shape[1]} for {GSR_list[i]}...')
+
+        sample_rate = 100
+        new_sample_rate = 100
+        segment_width = (gsr_data.iloc[:, j].notnull().sum() - 1) / 100
+
+        # remove Nan values
+        clean_data = gsr_data.iloc[:, j].dropna()
+
+
+        # Redirect stdout to suppress unwanted prints
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            wd = process_statistical(clean_data, use_scipy=True, sample_rate=sample_rate,
+                                     new_sample_rate=new_sample_rate,
+                                     segment_width=segment_width, segment_overlap=0)[1]
+
+
+        tonic_gsr = wd['tonic_gsr'][0]
+        phasic_gsr = wd['filtered_phasic_gsr'][0]
+
+        # save the data
+        if i == 0:
+            tonic_ant_gsr.append(tonic_gsr)
+            phasic_ant_gsr.append(phasic_gsr)
+        else:
+            tonic_out_gsr.append(tonic_gsr)
+            phasic_out_gsr.append(phasic_gsr)
+
+
+# calculate the area under the curve for each GSR data
+gsr_list = [tonic_ant_gsr, phasic_ant_gsr, tonic_out_gsr, phasic_out_gsr]
+
+# convert all to dataframes
+for i, gsr_data in enumerate(gsr_list):
+    gsr_list[i] = pd.DataFrame(gsr_data).T
+
+# unnest the dataframes from the list
+tonic_ant_gsr, phasic_ant_gsr, tonic_out_gsr, phasic_out_gsr = gsr_list
+
+
+df['AnticipatoryGSRAUC'] = area_under_curve(phasic_ant_gsr)
+df['OutcomeGSRAUC'] = area_under_curve(phasic_out_gsr)
 
 # add a participant ID every 250 rows
 subject_id = len(df) // 250 + 1
@@ -113,16 +169,6 @@ best_option = {
 
 
 # Apply the mapping to the BestOption column
-# Function to apply the mapping
-def check_best_option(row, mapping):
-    trial = row['SetSeen ']
-    response = row['KeyResponse']
-    if trial in mapping and response == mapping[trial]:
-        return 1  # Best option chosen
-    return 0  # Best option not chosen
-
-
-# Apply the function using DataFrame.apply()
 df['BestOptionChosen'] = df.apply(check_best_option, mapping=best_option, axis=1)
 
 # check if this new column is exactly the same as the original BestOption column
@@ -138,3 +184,45 @@ else:
 
 # # save the data
 df.to_csv('./Data/preliminary_data.csv', index=False)
+
+
+# ======================================================================================================================
+# for illustration, we will use the average of the anticipatory GSR data to show the preprocessing steps
+# ======================================================================================================================
+# preprocess the data
+m, wd, eda_clean = process_statistical(ts_ant_gsr.mean(axis=1), use_scipy=True, sample_rate=100, new_sample_rate=100,
+                                       segment_width=5, segment_overlap=0)
+
+original = ts_ant_gsr.mean(axis=1)
+tonic_gsr = pd.DataFrame(wd['tonic_gsr'][0])
+phasic_gsr = pd.DataFrame(wd['filtered_phasic_gsr'][0])
+# multiply the row index by 10 to get the time in ms
+tonic_gsr.index = tonic_gsr.index * 10
+phasic_gsr.index = phasic_gsr.index * 10
+
+
+# Plot the original and filtered signals
+palette = sns.color_palette("husl", 3)
+sns.set_style("white")
+plt.figure()
+plt.plot(original, color=palette[0], label='Original Signal')
+plt.tight_layout()
+sns.despine()
+plt.savefig('./figures/preprocessing_original.png', dpi=300)
+plt.show()
+
+plt.figure()
+plt.plot(tonic_gsr, color=palette[1], label='Tonic GSR')
+plt.tight_layout()
+sns.despine()
+plt.savefig('./figures/preprocessing_tonic.png', dpi=300)
+plt.show()
+
+plt.figure()
+plt.plot(phasic_gsr, color=palette[2], label='Phasic GSR')
+plt.tight_layout()
+sns.despine()
+plt.savefig('./figures/preprocessing_phasic.png', dpi=300)
+plt.show()
+
+
