@@ -13,6 +13,11 @@ df = pd.read_csv('./Data/preliminary_data.csv')
 training_data = df[df['Phase'] != 'Test']
 test_data = df[df['Phase'] == 'Test']
 
+print(training_data['AnticipatoryGSRAUC'].mean())
+print(training_data['OutcomeGSRAUC'].mean())
+print(test_data['AnticipatoryGSRAUC'].mean())
+print(test_data['OutcomeGSRAUC'].mean())
+
 
 # decide if the reward should be perceived as a loss
 def calculate_cumulative_average(x):
@@ -49,8 +54,9 @@ pairwise_t_test_GSR(training_data, 'OutcomeGSRAUC', 'training')
 
 # CA trials
 pairwise_t_test_GSR(test_data, 'AnticipatoryGSRAUC', 'testing', 2)
+pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
+pairwise_t_test_GSR(test_data, 'TonicAnticipatoryGSRAUC', 'testing', 2)
 
-ts_ant_gsr, ts_out_gsr = processGSR(df, draw=True, separate=True)
 
 
 

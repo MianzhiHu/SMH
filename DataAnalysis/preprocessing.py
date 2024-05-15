@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import requests
 import seaborn as sns
 import json
+import neurokit2 as nk
 import io
 import contextlib
 from utilities.utility_processGSR import processGSR, area_under_curve, extract_samples, check_best_option
@@ -70,11 +71,13 @@ df[GSR_list] = df[GSR_list].applymap(extract_samples)
 df[GSR_list] = df[GSR_list].applymap(str)
 ts_ant_gsr, ts_out_gsr = processGSR(df)
 
-# apply the preprocessing function to each column of the dataframes
+# use neurokit to preprocess the GSR data
 tonic_ant_gsr = []
 tonic_out_gsr = []
 phasic_ant_gsr = []
 phasic_out_gsr = []
+cleaned_ant_gsr = []
+cleaned_out_gsr = []
 
 for i, gsr_data in enumerate([ts_ant_gsr, ts_out_gsr]):
     for j in range(gsr_data.shape[1]):
@@ -85,46 +88,46 @@ for i, gsr_data in enumerate([ts_ant_gsr, ts_out_gsr]):
             print(f'Processing column {j}/{gsr_data.shape[1]} for {GSR_list[i]}...')
 
         sample_rate = 100
-        new_sample_rate = 100
-        segment_width = (gsr_data.iloc[:, j].notnull().sum() - 1) / 100
 
         # remove Nan values
-        clean_data = gsr_data.iloc[:, j].dropna()
+        clean_data = gsr_data.iloc[:, j]
+        clean_data = clean_data.dropna()
+        clean_data = nk.eda_clean(clean_data, sampling_rate=sample_rate)
 
+        # apply the preprocessing function
+        sig = nk.eda_phasic(clean_data, sampling_rate=sample_rate)
 
-        # Redirect stdout to suppress unwanted prints
-        f = io.StringIO()
-        with contextlib.redirect_stdout(f):
-            wd = process_statistical(clean_data, use_scipy=True, sample_rate=sample_rate,
-                                     new_sample_rate=new_sample_rate,
-                                     segment_width=segment_width, segment_overlap=0)[1]
-
-
-        tonic_gsr = wd['tonic_gsr'][0]
-        phasic_gsr = wd['filtered_phasic_gsr'][0]
+        tonic_gsr = sig['EDA_Tonic']
+        phasic_gsr = sig['EDA_Phasic']
 
         # save the data
         if i == 0:
             tonic_ant_gsr.append(tonic_gsr)
             phasic_ant_gsr.append(phasic_gsr)
+            cleaned_ant_gsr.append(clean_data)
         else:
             tonic_out_gsr.append(tonic_gsr)
             phasic_out_gsr.append(phasic_gsr)
+            cleaned_out_gsr.append(clean_data)
 
 
 # calculate the area under the curve for each GSR data
-gsr_list = [tonic_ant_gsr, phasic_ant_gsr, tonic_out_gsr, phasic_out_gsr]
+gsr_list = [tonic_ant_gsr, phasic_ant_gsr, cleaned_ant_gsr, tonic_out_gsr, phasic_out_gsr, cleaned_out_gsr]
+
 
 # convert all to dataframes
 for i, gsr_data in enumerate(gsr_list):
     gsr_list[i] = pd.DataFrame(gsr_data).T
 
 # unnest the dataframes from the list
-tonic_ant_gsr, phasic_ant_gsr, tonic_out_gsr, phasic_out_gsr = gsr_list
+tonic_ant_gsr, phasic_ant_gsr, cleaned_ant_gsr, tonic_out_gsr, phasic_out_gsr, cleaned_out_gsr = gsr_list
 
-
-df['AnticipatoryGSRAUC'] = area_under_curve(phasic_ant_gsr)
-df['OutcomeGSRAUC'] = area_under_curve(phasic_out_gsr)
+df['AnticipatoryGSRAUC'] = area_under_curve(cleaned_ant_gsr)
+df['OutcomeGSRAUC'] = area_under_curve(cleaned_out_gsr)
+df['TonicAnticipatoryGSRAUC'] = area_under_curve(tonic_ant_gsr)
+df['PhasicAnticipatoryGSRAUC'] = area_under_curve(phasic_ant_gsr)
+df['TonicOutcomeGSRAUC'] = area_under_curve(tonic_out_gsr)
+df['PhasicOutcomeGSRAUC'] = area_under_curve(phasic_out_gsr)
 
 # add a participant ID every 250 rows
 subject_id = len(df) // 250 + 1
@@ -190,14 +193,21 @@ df.to_csv('./Data/preliminary_data.csv', index=False)
 # for illustration, we will use the average of the anticipatory GSR data to show the preprocessing steps
 # ======================================================================================================================
 # preprocess the data
-m, wd, eda_clean = process_statistical(ts_ant_gsr.mean(axis=1), use_scipy=True, sample_rate=100, new_sample_rate=100,
-                                       segment_width=5, segment_overlap=0)
+original = ts_ant_gsr.mean(axis=1)[0:450]
 
-original = ts_ant_gsr.mean(axis=1)
-tonic_gsr = pd.DataFrame(wd['tonic_gsr'][0])
-phasic_gsr = pd.DataFrame(wd['filtered_phasic_gsr'][0])
-# multiply the row index by 10 to get the time in ms
+cleaned = nk.eda_clean(original, sampling_rate=100)
+signals = nk.eda_phasic(cleaned, sampling_rate=100)
+
+
+tonic_gsr = signals['EDA_Tonic']
+phasic_gsr = signals['EDA_Phasic']
+
+
+cleaned = pd.DataFrame(cleaned)
+cleaned.index = cleaned.index * 10
+tonic_gsr = pd.DataFrame(tonic_gsr)
 tonic_gsr.index = tonic_gsr.index * 10
+phasic_gsr = pd.DataFrame(phasic_gsr)
 phasic_gsr.index = phasic_gsr.index * 10
 
 
@@ -225,4 +235,22 @@ sns.despine()
 plt.savefig('./figures/preprocessing_phasic.png', dpi=300)
 plt.show()
 
+
+# plot together
+plt.figure()
+plt.plot(original, color=palette[0], label='Original Signal')
+plt.plot(cleaned, color=palette[1], label='Filtered Signal')
+plt.legend()
+plt.tight_layout()
+sns.despine()
+plt.savefig('./figures/preprocessing_combined.png', dpi=300)
+plt.show()
+
+# # plot the phasic and tonic GSR data
+# plt.figure()
+# plt.plot(phasic_ant_gsr.mean(axis=1), label='Tonic Anticipatory GSR')
+# plt.xlabel('Time (ms)')
+# plt.ylabel('GSR')
+# plt.legend()
+# plt.show()
 
