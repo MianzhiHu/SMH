@@ -190,6 +190,7 @@ df.drop(columns=['AnticipatoryGSR', 'OutcomeGSR'], inplace=True)
 
 # give the average tonic GSR data
 df['AverageAnticipatoryTonicAUC'] = df.groupby('Subnum')['TonicAnticipatoryGSRAUC'].transform('mean')
+df['AverageOutcomeTonicAUC'] = df.groupby('Subnum')['TonicOutcomeGSRAUC'].transform('mean')
 
 # save the data
 df.to_csv('./Data/preliminary_data.csv', index=False)
