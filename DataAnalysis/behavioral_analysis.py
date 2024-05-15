@@ -27,4 +27,3 @@ plt.xticks(np.arange(6), x_labels)
 plt.title('Percentage of selecting the best option')
 plt.show()
 
-

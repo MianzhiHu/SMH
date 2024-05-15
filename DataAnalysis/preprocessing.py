@@ -185,66 +185,72 @@ else:
     df['BestOption'] = df['BestOptionChosen']
     df.drop(columns=['BestOptionChosen'], inplace=True)
 
-# # save the data
+# remove the original GSR data
+df.drop(columns=['AnticipatoryGSR', 'OutcomeGSR'], inplace=True)
+
+# give the average tonic GSR data
+df['AverageAnticipatoryTonicAUC'] = df.groupby('Subnum')['TonicAnticipatoryGSRAUC'].transform('mean')
+
+# save the data
 df.to_csv('./Data/preliminary_data.csv', index=False)
 
 
 # ======================================================================================================================
 # for illustration, we will use the average of the anticipatory GSR data to show the preprocessing steps
 # ======================================================================================================================
-# preprocess the data
-original = ts_ant_gsr.mean(axis=1)[0:450]
-
-cleaned = nk.eda_clean(original, sampling_rate=100)
-signals = nk.eda_phasic(cleaned, sampling_rate=100)
-
-
-tonic_gsr = signals['EDA_Tonic']
-phasic_gsr = signals['EDA_Phasic']
-
-
-cleaned = pd.DataFrame(cleaned)
-cleaned.index = cleaned.index * 10
-tonic_gsr = pd.DataFrame(tonic_gsr)
-tonic_gsr.index = tonic_gsr.index * 10
-phasic_gsr = pd.DataFrame(phasic_gsr)
-phasic_gsr.index = phasic_gsr.index * 10
-
-
-# Plot the original and filtered signals
-palette = sns.color_palette("husl", 3)
-sns.set_style("white")
-plt.figure()
-plt.plot(original, color=palette[0], label='Original Signal')
-plt.tight_layout()
-sns.despine()
-plt.savefig('./figures/preprocessing_original.png', dpi=300)
-plt.show()
-
-plt.figure()
-plt.plot(tonic_gsr, color=palette[1], label='Tonic GSR')
-plt.tight_layout()
-sns.despine()
-plt.savefig('./figures/preprocessing_tonic.png', dpi=300)
-plt.show()
-
-plt.figure()
-plt.plot(phasic_gsr, color=palette[2], label='Phasic GSR')
-plt.tight_layout()
-sns.despine()
-plt.savefig('./figures/preprocessing_phasic.png', dpi=300)
-plt.show()
-
-
-# plot together
-plt.figure()
-plt.plot(original, color=palette[0], label='Original Signal')
-plt.plot(cleaned, color=palette[1], label='Filtered Signal')
-plt.legend()
-plt.tight_layout()
-sns.despine()
-plt.savefig('./figures/preprocessing_combined.png', dpi=300)
-plt.show()
+# # preprocess the data
+# original = ts_ant_gsr.mean(axis=1)[0:450]
+#
+# cleaned = nk.eda_clean(original, sampling_rate=100)
+# signals = nk.eda_phasic(cleaned, sampling_rate=100)
+#
+#
+# tonic_gsr = signals['EDA_Tonic']
+# phasic_gsr = signals['EDA_Phasic']
+#
+#
+# cleaned = pd.DataFrame(cleaned)
+# cleaned.index = cleaned.index * 10
+# tonic_gsr = pd.DataFrame(tonic_gsr)
+# tonic_gsr.index = tonic_gsr.index * 10
+# phasic_gsr = pd.DataFrame(phasic_gsr)
+# phasic_gsr.index = phasic_gsr.index * 10
+#
+#
+# # Plot the original and filtered signals
+# palette = sns.color_palette("husl", 3)
+# sns.set_style("white")
+# plt.figure()
+# plt.plot(original, color=palette[0], label='Original Signal')
+# plt.tight_layout()
+# sns.despine()
+# plt.savefig('./figures/preprocessing_original.png', dpi=300)
+# plt.show()
+#
+# plt.figure()
+# plt.plot(tonic_gsr, color=palette[1], label='Tonic GSR')
+# plt.tight_layout()
+# sns.despine()
+# plt.savefig('./figures/preprocessing_tonic.png', dpi=300)
+# plt.show()
+#
+# plt.figure()
+# plt.plot(phasic_gsr, color=palette[2], label='Phasic GSR')
+# plt.tight_layout()
+# sns.despine()
+# plt.savefig('./figures/preprocessing_phasic.png', dpi=300)
+# plt.show()
+#
+#
+# # plot together
+# plt.figure()
+# plt.plot(original, color=palette[0], label='Original Signal')
+# plt.plot(cleaned, color=palette[1], label='Filtered Signal')
+# plt.legend()
+# plt.tight_layout()
+# sns.despine()
+# plt.savefig('./figures/preprocessing_combined.png', dpi=300)
+# plt.show()
 
 # # plot the phasic and tonic GSR data
 # plt.figure()
