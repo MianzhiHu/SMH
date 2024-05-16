@@ -4,7 +4,7 @@ from scipy.stats import ttest_ind
 import seaborn as sns
 import matplotlib.pyplot as plt
 from utilities.utility_processGSR import processGSR, area_under_curve, pairwise_t_test_GSR
-
+import statsmodels.formula.api as smf
 
 # load processed data
 df = pd.read_csv('./Data/preliminary_data.csv')
@@ -12,11 +12,7 @@ df = pd.read_csv('./Data/preliminary_data.csv')
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']
 test_data = df[df['Phase'] == 'Test']
-
-print(training_data['AnticipatoryGSRAUC'].mean())
-print(training_data['OutcomeGSRAUC'].mean())
-print(test_data['AnticipatoryGSRAUC'].mean())
-print(test_data['OutcomeGSRAUC'].mean())
+test_CA = test_data[test_data['SetSeen '] == 2]
 
 
 # decide if the reward should be perceived as a loss
@@ -25,7 +21,8 @@ def calculate_cumulative_average(x):
 
 
 # Apply the function to each participant's data
-training_data.loc[:, 'Cumulative_Average'] = training_data.groupby('Subnum')['Reward'].transform(calculate_cumulative_average)
+training_data.loc[:, 'Cumulative_Average'] = training_data.groupby('Subnum')['Reward'].transform(
+    calculate_cumulative_average)
 training_data.loc[:, 'Loss'] = (training_data['Cumulative_Average'] > training_data['Reward']).astype(int)
 
 # further split the data by condition
@@ -43,7 +40,8 @@ print(magnitude_training['Subnum'].nunique())
 
 # test whether people show higher outcome GSR when they choose the bad option
 # there doesn't seem to be a significant difference
-ttest_ind(training_data[training_data['Loss'] == 0]['OutcomeGSRAUC'], training_data[training_data['Loss'] == 1]['OutcomeGSRAUC'])
+ttest_ind(training_data[training_data['Loss'] == 0]['OutcomeGSRAUC'],
+          training_data[training_data['Loss'] == 1]['OutcomeGSRAUC'])
 print('Outcome GSR for the losses:', training_data[training_data['Loss'] == 1]['OutcomeGSRAUC'].mean())
 print('Outcome GSR for the wins:', training_data[training_data['Loss'] == 0]['OutcomeGSRAUC'].mean())
 
@@ -52,11 +50,46 @@ print('Outcome GSR for the wins:', training_data[training_data['Loss'] == 0]['Ou
 pairwise_t_test_GSR(training_data, 'AnticipatoryGSRAUC', 'training')
 pairwise_t_test_GSR(training_data, 'OutcomeGSRAUC', 'training')
 
+# do a simple t-test between BestOption 1 and 0
+# there doesn't seem to be a significant difference
+ttest_ind(training_data[training_data['BestOption'] == 1]['AnticipatoryGSRAUC'],
+          training_data[training_data['BestOption'] == 0]['AnticipatoryGSRAUC'])
+print('Anticipatory GSR for the best option:', training_data[training_data['BestOption'] == 1]['AnticipatoryGSRAUC'].mean())
+print('Anticipatory GSR for the worst option:', training_data[training_data['BestOption'] == 0]['AnticipatoryGSRAUC'].mean())
+
+ttest_ind(training_data[training_data['BestOption'] == 1]['OutcomeGSRAUC'],
+          training_data[training_data['BestOption'] == 0]['OutcomeGSRAUC'])
+print('Outcome GSR for the best option:', training_data[training_data['BestOption'] == 1]['OutcomeGSRAUC'].mean())
+print('Outcome GSR for the worst option:', training_data[training_data['BestOption'] == 0]['OutcomeGSRAUC'].mean())
+
 # CA trials
 pairwise_t_test_GSR(test_data, 'AnticipatoryGSRAUC', 'testing', 2)
 pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
 pairwise_t_test_GSR(test_data, 'TonicAnticipatoryGSRAUC', 'testing', 2)
 
 
+# ======================================================================================================================
+#                                                  Advanced Analysis
+# ======================================================================================================================
+model = smf.mixedlm("AnticipatoryGSRAUC ~ BestOption * Condition", test_CA, groups=test_CA["Subnum"]).fit()
+print(model.summary())
+
+model = smf.mixedlm("AnticipatoryGSRAUC ~ BestOption", df, groups=df["Subnum"]).fit()
+print(model.summary())
 
 
+# ======================================================================================================================
+#                                                  Plots
+# ======================================================================================================================
+# plot out the anticipatory GSR data by condition
+plt.figure(figsize=(8, 6))
+sns.set_style("white")
+sns.barplot(data=test_CA, x='Condition', y='AnticipatoryGSRAUC', hue='BestOption')
+handles, labels = plt.gca().get_legend_handles_labels()
+# customizing the legend
+plt.legend(title='Selected Option', loc='upper left', labels=['A', 'C'], handles=handles)
+plt.xlabel('')
+plt.ylabel('Anticipatory AUC (uS/sec)')
+sns.despine()
+plt.savefig('./figures/pre_AnticipatoryGSR_CA.png', dpi=300)
+plt.show()
