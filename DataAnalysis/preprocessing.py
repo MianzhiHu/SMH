@@ -71,56 +71,76 @@ df[GSR_list] = df[GSR_list].applymap(extract_samples)
 df[GSR_list] = df[GSR_list].applymap(str)
 ts_ant_gsr, ts_out_gsr = processGSR(df)
 
-# use neurokit to preprocess the GSR data
-tonic_ant_gsr = []
-tonic_out_gsr = []
-phasic_ant_gsr = []
-phasic_out_gsr = []
-cleaned_ant_gsr = []
-cleaned_out_gsr = []
+# ======================================================================================================================
+# Preprocess the GSR data
+# ======================================================================================================================
+
+# initialize the data
+cleaned_ant_gsr = None
+phasic_ant_gsr = None
+tonic_ant_gsr = None
+cleaned_out_gsr = None
+phasic_out_gsr = None
+tonic_out_gsr = None
 
 for i, gsr_data in enumerate([ts_ant_gsr, ts_out_gsr]):
-    for j in range(gsr_data.shape[1]):
 
-        batch_size = 500
+    # group the data by participant
+    participant_data = {}
+    for participant in gsr_data.columns.unique():
+        participant_data[participant] = gsr_data[participant]
 
-        if j % batch_size == 0:
-            print(f'Processing column {j}/{gsr_data.shape[1]} for {GSR_list[i]}...')
+    # process the GSR data
+    preprocessed_gsr = {}
+    tonic_gsr = {}
+    phasic_gsr = {}
 
+    iteration = 0
+
+    for participant, data in participant_data.items():
+
+        iteration += 1
         sample_rate = 100
 
-        # remove Nan values
-        clean_data = gsr_data.iloc[:, j]
-        clean_data = clean_data.dropna()
-        clean_data = nk.eda_clean(clean_data, sampling_rate=sample_rate)
+        print(f'[{GSR_list[i]}] Processing participant ({iteration}/{len(participant_data)})...')
+
+        # record the number of valid data points in each column
+        valid_data = data.count()
+
+        # flatten the data
+        data = data.values.flatten()
+
+        # remove NaN values
+        data = data[~np.isnan(data)]
 
         # apply the preprocessing function
-        sig = nk.eda_phasic(clean_data, sampling_rate=sample_rate)
+        preprocessed = nk.eda_clean(data, sampling_rate=sample_rate)
+        sig = nk.eda_phasic(preprocessed, sampling_rate=sample_rate)
 
-        tonic_gsr = sig['EDA_Tonic']
-        phasic_gsr = sig['EDA_Phasic']
+        phasic = sig['EDA_Phasic']
+        tonic = sig['EDA_Tonic']
 
-        # save the data
-        if i == 0:
-            tonic_ant_gsr.append(tonic_gsr)
-            phasic_ant_gsr.append(phasic_gsr)
-            cleaned_ant_gsr.append(clean_data)
-        else:
-            tonic_out_gsr.append(tonic_gsr)
-            phasic_out_gsr.append(phasic_gsr)
-            cleaned_out_gsr.append(clean_data)
+        # reverse back to the original shape column-wise using the number of valid data points
+        for j, signals in enumerate([preprocessed, phasic, tonic]):
+            signals = np.split(signals, np.cumsum(valid_data), axis=0)[:-1]
+            signals = [pd.DataFrame(k).reset_index(drop=True) for k in signals]
+            signals = pd.concat(signals, axis=1)
+            if j == 0:
+                preprocessed_gsr[participant] = signals
+            elif j == 1:
+                phasic_gsr[participant] = signals
+            else:
+                tonic_gsr[participant] = signals
 
+    if i == 0:
+        cleaned_ant_gsr = pd.concat(preprocessed_gsr.values(), axis=1)
+        phasic_ant_gsr = pd.concat(phasic_gsr.values(), axis=1)
+        tonic_ant_gsr = pd.concat(tonic_gsr.values(), axis=1)
 
-# calculate the area under the curve for each GSR data
-gsr_list = [tonic_ant_gsr, phasic_ant_gsr, cleaned_ant_gsr, tonic_out_gsr, phasic_out_gsr, cleaned_out_gsr]
-
-
-# convert all to dataframes
-for i, gsr_data in enumerate(gsr_list):
-    gsr_list[i] = pd.DataFrame(gsr_data).T
-
-# unnest the dataframes from the list
-tonic_ant_gsr, phasic_ant_gsr, cleaned_ant_gsr, tonic_out_gsr, phasic_out_gsr, cleaned_out_gsr = gsr_list
+    else:
+        cleaned_out_gsr = pd.concat(preprocessed_gsr.values(), axis=1)
+        phasic_out_gsr = pd.concat(phasic_gsr.values(), axis=1)
+        tonic_out_gsr = pd.concat(tonic_gsr.values(), axis=1)
 
 df['AnticipatoryGSRAUC'] = area_under_curve(cleaned_ant_gsr)
 df['OutcomeGSRAUC'] = area_under_curve(cleaned_out_gsr)

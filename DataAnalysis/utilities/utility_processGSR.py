@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
+from scipy.integrate import trapz
 
 
 def processGSR(df, standardize=None, draw=False, separate=False):
@@ -60,7 +61,7 @@ def area_under_curve(data):
     for i in range(data.shape[1]):
         trial_data = data.iloc[:, i].dropna()
         trial_data.index = np.arange(10, (len(trial_data) + 1) * 10, 10)
-        auc_per_second = np.trapz(trial_data, x=trial_data.index) / (len(trial_data) * 10)
+        auc_per_second = trapz(trial_data, x=trial_data.index) / (len(trial_data) * 10)
         auc_ant.append(auc_per_second)
 
     return auc_ant
