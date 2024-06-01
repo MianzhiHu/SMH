@@ -5,6 +5,11 @@ from scipy.stats import ttest_ind
 from scipy.integrate import trapz
 
 
+# extract the GSR data
+def extract_samples(d):
+    return d['GetExperimentSamples'][0][2:]  # Skip the first two elements ('GSR' and 1)
+
+
 def processGSR(df, standardize=None, draw=False, separate=False):
     def processIndividualGSR(data, column, standardize=None):
         ts_gsr = data[column].apply(
@@ -50,9 +55,52 @@ def processGSR(df, standardize=None, draw=False, separate=False):
     return ts_ant_gsr, ts_out_gsr
 
 
-# extract the GSR data
-def extract_samples(d):
-    return d['GetExperimentSamples'][0][2:]  # Skip the first two elements ('GSR' and 1)
+# Rename the columns to include the participant number and trial number
+def rename_columns(df):
+    new_columns = []
+    for participant in df.columns.unique():
+        trial_number = 1
+        for _ in df.loc[:, participant].columns:
+            new_columns.append(f"{participant}/trial{trial_number}")
+            trial_number += 1
+    df.columns = new_columns
+    return df
+
+
+# Function to interleave the columns of anticipatory and outcome GSR signals to perform preprocessing
+def interleave_columns(df1, df2):
+    interleaved = []
+    for col1, col2 in zip(df1.columns, df2.columns):
+        interleaved.append(df1[col1])
+        interleaved.append(df2[col2])
+    return pd.concat(interleaved, axis=1)
+
+
+# Function to calculate the difference (same as implemented by Bechara et al., 1999)
+def difference_transformation(data, interval, sample_rate):
+    # Calculate the time interval
+    time_interval = interval / sample_rate
+    # Create an array to store the transformed data
+    transformed_data = np.zeros(len(data) - interval)
+
+    for i in range(len(data) - interval):
+        # Calculate the difference in amplitude
+        amplitude_difference = data[i + interval] - data[i]
+        # Calculate the difference per time interval
+        transformed_data[i] = amplitude_difference / time_interval
+
+    return transformed_data
+
+
+# Function to unnest the combined gsr signals back into separate anticipatory and outcome gsr signals
+def unzip_combined_data(df):
+    # take the first column as the ant_gsr
+    anticipatory_gsr = df.iloc[:, ::2]
+
+    # take the second column as the out_gsr
+    outcome_gsr = df.iloc[:, 1::2]
+
+    return anticipatory_gsr, outcome_gsr
 
 
 def area_under_curve(data):

@@ -4,10 +4,12 @@ from scipy.stats import ttest_ind
 import seaborn as sns
 import matplotlib.pyplot as plt
 from utilities.utility_processGSR import processGSR, area_under_curve, pairwise_t_test_GSR
+from utilities.utility_plotting import plot_trial, plot_overall, plot_by_phase
 import statsmodels.formula.api as smf
 
 # load processed data
-df = pd.read_csv('./Data/preliminary_data.csv')
+path = './Data/processed_data_difference.csv'
+df = pd.read_csv(path)
 
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']
@@ -89,6 +91,16 @@ pairwise_t_test_GSR(test_data, 'AnticipatoryGSRAUC', 'testing', 2)
 pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
 pairwise_t_test_GSR(test_data, 'TonicAnticipatoryGSRAUC', 'testing', 2)
 
+# # calculate the variance of the original Iowa Gambling Task
+# deckA = [100, 100, -50, 100, -200, 100, -100, 100, -150, -250]
+# deckB = [100, 100, 100, 100, 100, 100, 100, 100, 100, -1150]
+# deckC = [50, 50, 0, 50, 0, 50, 0, 0, 0, 50]
+# deckD = [50, 50, 50, 50, 50, 50, 50, 50, 50, -200]
+# print(f'Deck A: {np.std(deckA)}')
+# print(f'Deck B: {np.std(deckB)}')
+# print(f'Deck C: {np.std(deckC)}')
+# print(f'Deck D: {np.std(deckD)}')
+
 # ======================================================================================================================
 #                                                  Advanced Analysis
 # ======================================================================================================================
@@ -97,7 +109,7 @@ df['BestOption'] = df['BestOption'].astype('category')
 test_CA.loc[:, 'BestOption'] = test_CA['BestOption'].astype('category')
 test_CA.loc[:, 'Condition'] = test_CA['Condition'].astype('category')
 
-model = smf.mixedlm("TonicAnticipatoryGSRAUC ~ BestOption * Condition", test_CA, groups=test_CA["Subnum"]).fit()
+model = smf.mixedlm("AnticipatoryGSRAUC ~ BestOption * Condition", test_CA, groups=test_CA["Subnum"]).fit()
 print(model.summary())
 
 model = smf.mixedlm("OutcomeGSRAUC ~ BestOption + Condition", df, groups=df["Subnum"]).fit()
@@ -107,44 +119,14 @@ print(model.summary())
 # ======================================================================================================================
 #                                                  Plots
 # ======================================================================================================================
-# # plot out the anticipatory GSR data by condition
-# plt.figure(figsize=(8, 6))
-# sns.set_style("white")
-# sns.barplot(data=test_CA, x='Condition', y='PhasicAnticipatoryGSRAUC', hue='BestOption')
-# handles, labels = plt.gca().get_legend_handles_labels()
-# # customizing the legend
-# plt.legend(title='Selected Option', loc='upper left', labels=['A', 'C'], handles=handles)
-# plt.xlabel('')
-# plt.ylabel('Anticipatory AUC (uS/sec)')
-# sns.despine()
-# plt.savefig('./figures/pre_PhasicAnticipatoryGSR_CA.png', dpi=300)
-# plt.show()
-#
-#
+# plot out the anticipatory GSR data by condition
+test_AD = test_data[test_data['SetSeen '] == 4]
+
+for signal in ['AnticipatoryGSRAUC', 'PhasicAnticipatoryGSRAUC', 'TonicAnticipatoryGSRAUC']:
+    plot_trial(test_CA, signal, f'{signal} (uS/sec)', trial="CA")
+
 # plot out the overall anticipatory and outcome GSR data by best option
-df_melted = test_data.melt(id_vars='BestOption', value_vars=['AnticipatoryGSRAUC', 'OutcomeGSRAUC'],
-                            var_name='GSR_Type', value_name='AUC')
+plot_overall(test_data, 'AUC (uS/sec)', 'test')
 
-plt.figure(figsize=(8, 6))
-sns.set_style("white")
-sns.barplot(data=df_melted, x='BestOption', y='AUC', hue='GSR_Type')
-handles, labels = plt.gca().get_legend_handles_labels()
-plt.legend(title='GSR Type', labels=['Anticipatory', 'Outcome'], handles=handles)
-plt.xlabel('')
-plt.ylabel('AUC (uS/sec)')
-sns.despine()
-plt.xticks(np.arange(2), ['Suboptimal Option', 'Optimal Option'])
-plt.savefig('./figures/test_overall.png', dpi=300)
-plt.show()
-
-# # plot out the anticipatory and outcome GSR data by phase
-# plt.figure(figsize=(8, 6))
-# sns.set_style("white")
-# sns.lineplot(data=df, x='Phase', y='AnticipatoryGSRAUC', hue='BestOption')
-# handles, labels = plt.gca().get_legend_handles_labels()
-# plt.legend(title='Selected Option', loc='upper left', labels=['Suboptimal Option', 'Optimal Option'], handles=handles)
-# plt.xlabel('')
-# plt.ylabel('Anticipatory AUC (uS/sec)')
-# sns.despine()
-# plt.savefig('./figures/pre_AntbyPhase.png', dpi=300)
-# plt.show()
+# plot out the anticipatory and outcome GSR data by phase
+plot_by_phase(df, 'PhasicAnticipatoryGSRAUC', 'Anticipatory AUC (uS/sec)')

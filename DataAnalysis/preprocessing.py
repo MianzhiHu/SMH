@@ -8,10 +8,16 @@ import json
 import neurokit2 as nk
 import io
 import contextlib
-from utilities.utility_processGSR import processGSR, area_under_curve, extract_samples, check_best_option
-from scipy.signal import butter, filtfilt, welch
+from utilities.utility_processGSR import (extract_samples, processGSR, rename_columns, interleave_columns,
+                                          difference_transformation, unzip_combined_data, area_under_curve,
+                                          check_best_option)
 from utilities.pyEDA.main import *
+import pyphysio as ph
+from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 
+# ======================================================================================================================
+# Load data from JATOS generated file
+# ======================================================================================================================
 
 # parse the data
 data = []
@@ -23,7 +29,11 @@ with open('./Data/jatos_results_20240422185445.txt', 'r') as file:
 
 data = pd.DataFrame(data)
 
-# here is where we load and preprocess the data
+# ======================================================================================================================
+# Preprocess behavioral data
+# ======================================================================================================================
+
+# Categorize variables in the data
 behavioral_list = ['ReactTime', 'Reward', 'BestOption', 'KeyResponse', 'SetSeen ', 'OptionRwdMean', 'Phase']
 
 GSR_list = ['AnticipatoryGSR', 'OutcomeGSR']
@@ -39,16 +49,21 @@ demo_list = ['Gender', 'Ethnicity', 'Race', 'Age']
 kept_columns = (['Condition'] + ['studyResultId'] + behavioral_list + GSR_list +
                 personality_list + demo_list)
 
+# keep only the necessary columns
 data = data[kept_columns]
 
+# refine the data
 df = data.groupby(data.index // 10).first()
 df.reset_index(drop=True, inplace=True)
 
 # check the number of GSR data points
 print(df['AnticipatoryGSR'].apply(lambda x: len(x)).value_counts())
+print()
 print(f'Missing data percentage in AnticipatoryGSR: '
       f'{(1 - df["AnticipatoryGSR"].apply(lambda x: len(x)).value_counts()[250] / len(df)) * 100:.2f}%')
+print()
 print(df['OutcomeGSR'].apply(lambda x: len(x)).value_counts())
+print()
 print(f'Missing data percentage in OutcomeGSR: '
       f'{(1 - df["OutcomeGSR"].apply(lambda x: len(x)).value_counts()[250] / len(df)) * 100:.2f}%')
 
@@ -75,79 +90,150 @@ ts_ant_gsr, ts_out_gsr = processGSR(df)
 # Preprocess the GSR data
 # ======================================================================================================================
 
-# initialize the data
-cleaned_ant_gsr = None
-phasic_ant_gsr = None
-tonic_ant_gsr = None
-cleaned_out_gsr = None
-phasic_out_gsr = None
-tonic_out_gsr = None
+# Rename the columns to include the participant number and trial number
+ts_ant_gsr_renamed = rename_columns(ts_ant_gsr.copy())
+ts_out_gsr_renamed = rename_columns(ts_out_gsr.copy())
 
-for i, gsr_data in enumerate([ts_ant_gsr, ts_out_gsr]):
+# print mean anticipatory and outcome GSR data length
+print(f'Mean count of the data: {ts_ant_gsr.count().mean()}')
+print(f'Mean count of the data: {ts_out_gsr.count().mean()}')
 
-    # group the data by participant
-    participant_data = {}
-    for participant in gsr_data.columns.unique():
-        participant_data[participant] = gsr_data[participant]
+# Interleave the columns from both DataFrames
+combined_df = interleave_columns(ts_ant_gsr_renamed, ts_out_gsr_renamed)
 
-    # process the GSR data
-    preprocessed_gsr = {}
-    tonic_gsr = {}
-    phasic_gsr = {}
+# standardize the data using log transformation
+combined_df = np.log(combined_df + 1)
 
-    iteration = 0
+# Initialize the data dictionaries for combined results
+combined_cleaned_gsr = {}
+combined_phasic_gsr = {}
+combined_tonic_gsr = {}
 
-    for participant, data in participant_data.items():
+# Get unique participants from the columns
+participants = ts_ant_gsr.columns.unique()
 
-        iteration += 1
-        sample_rate = 100
+iterations = 0
+method = 'difference'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', and 'difference'
+print()
+print('=========================================================================================================')
+print(f'Processing GSR data using the {method} method...')
+print('=========================================================================================================')
+print()
 
-        print(f'[{GSR_list[i]}] Processing participant ({iteration}/{len(participant_data)})...')
+# Process the GSR data for each participant
+for participant in participants:
 
-        # record the number of valid data points in each column
-        valid_data = data.count()
+    sample_rate = 100
+    interval = 10  # interval only for the difference transformation method
+    iterations += 1
+    print(f'Processing participant ({iterations}/{len(participants)})...')
 
-        # flatten the data
-        data = data.values.flatten()
+    participant_cols_full = [col for col in combined_df.columns if col.startswith(f"{participant}/")]
+    # drop duplicates in the columns
+    participant_cols = list(dict.fromkeys(participant_cols_full))
 
-        # remove NaN values
-        data = data[~np.isnan(data)]
+    # Combine the data for the participant
+    gsr_data = combined_df[participant_cols]
 
-        # apply the preprocessing function
-        preprocessed = nk.eda_clean(data, sampling_rate=sample_rate)
-        sig = nk.eda_phasic(preprocessed, sampling_rate=sample_rate)
+    # Flatten the data
+    data_flat = gsr_data.values.flatten()
+
+    # Remove NaN values
+    data_flat = data_flat[~np.isnan(data_flat)]
+
+    # Apply the preprocessing function
+    preprocessed = nk.signal_sanitize(nk.eda_clean(data_flat, sampling_rate=sample_rate))
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # NeuroKit2 can implement the three methods for phasic and tonic decomposition: high-pass filter,
+    # median smoothing,
+    # and convex optimization.
+    # The change in the method can be done by simply changing the method parameter in the
+    # eda_phasic function.
+    # The default method is the high-pass filter.
+    # ------------------------------------------------------------------------------------------------------------------
+    if method in ['highpass', 'smoothmedian', 'cvxeda']:
+        sig = nk.eda_phasic(preprocessed, sampling_rate=sample_rate, method=method)
 
         phasic = sig['EDA_Phasic']
         tonic = sig['EDA_Tonic']
 
-        # reverse back to the original shape column-wise using the number of valid data points
-        for j, signals in enumerate([preprocessed, phasic, tonic]):
-            signals = np.split(signals, np.cumsum(valid_data), axis=0)[:-1]
-            signals = [pd.DataFrame(k).reset_index(drop=True) for k in signals]
-            signals = pd.concat(signals, axis=1)
-            if j == 0:
-                preprocessed_gsr[participant] = signals
-            elif j == 1:
-                phasic_gsr[participant] = signals
-            else:
-                tonic_gsr[participant] = signals
+    # ------------------------------------------------------------------------------------------------------------------
+    # However, the continuous deconvolution analysis (CDA) can only be implemented using the pyphysio library.
+    # ------------------------------------------------------------------------------------------------------------------
+    if method == 'cda':
 
-    if i == 0:
-        cleaned_ant_gsr = pd.concat(preprocessed_gsr.values(), axis=1)
-        phasic_ant_gsr = pd.concat(phasic_gsr.values(), axis=1)
-        tonic_ant_gsr = pd.concat(tonic_gsr.values(), axis=1)
+        # create the data for the driver
+        sig = ph.create_signal(preprocessed, sampling_freq=sample_rate)
 
-    else:
-        cleaned_out_gsr = pd.concat(preprocessed_gsr.values(), axis=1)
-        phasic_out_gsr = pd.concat(phasic_gsr.values(), axis=1)
-        tonic_out_gsr = pd.concat(tonic_gsr.values(), axis=1)
+        driver = DriverEstim()(sig)
+        phasic_sig = PhasicEstim(amplitude=0.01)(driver)
+        tonic_sig = PhasicEstim(amplitude=0.01, return_phasic=False)(driver)
 
+        # revert back to the original shape
+        phasic = phasic_sig.to_dataframe()['signal_DriverEstim_PhasicEstim']
+        tonic = tonic_sig.to_dataframe()['signal_DriverEstim_PhasicEstim']
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # The original preprocessing method by Bechara et al., 1999, uses the difference transformation method. There is
+    # no existing package in Python that implements this method. Therefore, we custom implement it here.
+    # ------------------------------------------------------------------------------------------------------------------
+    if method == 'difference':
+        phasic = pd.DataFrame(difference_transformation(preprocessed, interval=interval, sample_rate=sample_rate))
+        # there is no tonic component in the difference transformation method
+        tonic = pd.DataFrame(np.zeros(len(phasic)))
+
+    # Record the number of valid data points in each column
+    valid_data = gsr_data.count()
+
+    # Reverse back to the original shape column-wise using the number of valid data points
+    for j, signals in enumerate([preprocessed, phasic, tonic]):
+        signals_split = np.split(signals, np.cumsum(valid_data), axis=0)[:-1]
+        signals_df = [pd.DataFrame(k).reset_index(drop=True) for k in signals_split]
+        signals_combined = pd.concat(signals_df, axis=1)
+
+        # Set column names for the signals_combined DataFrame
+        signals_combined.columns = participant_cols_full
+
+        if j == 0:
+            combined_cleaned_gsr[participant] = signals_combined
+        elif j == 1:
+            combined_phasic_gsr[participant] = signals_combined
+        else:
+            combined_tonic_gsr[participant] = signals_combined
+
+# Concatenate results for each type across all participants
+cleaned_combined_gsr = pd.concat(combined_cleaned_gsr.values(), axis=1)
+phasic_combined_gsr = pd.concat(combined_phasic_gsr.values(), axis=1)
+tonic_combined_gsr = pd.concat(combined_tonic_gsr.values(), axis=1)
+
+# check the shape of the data
+max_samples = 500
+if (cleaned_combined_gsr.shape[0] == phasic_combined_gsr.shape[0] == tonic_combined_gsr.shape[0] == max_samples
+        and cleaned_combined_gsr.shape[1] == phasic_combined_gsr.shape[1] == tonic_combined_gsr.shape[1]
+        == len(participants) * max_samples):
+    print('=========================================================================================================')
+    print('GSR data has been successfully processed.')
+    print('=========================================================================================================')
+else:
+    raise ValueError('The data has not been processed correctly.')
+
+# Unzip the combined data
+cleaned_ant_gsr, cleaned_out_gsr = unzip_combined_data(cleaned_combined_gsr)
+phasic_ant_gsr, phasic_out_gsr = unzip_combined_data(phasic_combined_gsr)
+tonic_ant_gsr, tonic_out_gsr = unzip_combined_data(tonic_combined_gsr)
+
+# Calculate the area under the curve for each GSR data
 df['AnticipatoryGSRAUC'] = area_under_curve(cleaned_ant_gsr)
 df['OutcomeGSRAUC'] = area_under_curve(cleaned_out_gsr)
 df['TonicAnticipatoryGSRAUC'] = area_under_curve(tonic_ant_gsr)
 df['PhasicAnticipatoryGSRAUC'] = area_under_curve(phasic_ant_gsr)
 df['TonicOutcomeGSRAUC'] = area_under_curve(tonic_out_gsr)
 df['PhasicOutcomeGSRAUC'] = area_under_curve(phasic_out_gsr)
+
+# ======================================================================================================================
+# Some final cleaning steps
+# ======================================================================================================================
 
 # add a participant ID every 250 rows
 subject_id = len(df) // 250 + 1
@@ -190,7 +276,6 @@ best_option = {
     5: 2  # choose B in BD
 }
 
-
 # Apply the mapping to the BestOption column
 df['BestOptionChosen'] = df.apply(check_best_option, mapping=best_option, axis=1)
 
@@ -213,8 +298,11 @@ df['AverageAnticipatoryTonicAUC'] = df.groupby('Subnum')['TonicAnticipatoryGSRAU
 df['AverageOutcomeTonicAUC'] = df.groupby('Subnum')['TonicOutcomeGSRAUC'].transform('mean')
 
 # save the data
-df.to_csv('./Data/preliminary_data.csv', index=False)
+df.to_csv(f'./Data/processed_data_{method}.csv', index=False)
 
+print('=========================================================================================================')
+print('Done! Preprocessed data has been saved!')
+print('=========================================================================================================')
 
 # ======================================================================================================================
 # for illustration, we will use the average of the anticipatory GSR data to show the preprocessing steps
@@ -281,3 +369,26 @@ df.to_csv('./Data/preliminary_data.csv', index=False)
 # plt.legend()
 # plt.show()
 
+
+# # Simulate EDA signal
+# from utilities.pyEDA.pyEDA.cvxEDA import cvxEDA
+#
+# eda_signal = nk.eda_simulate(duration=30, scr_number=5, drift=0.1)
+# eda_signal = nk.standardize(eda_signal)
+#
+# # Decompose using different algorithms
+# smoothMedian = nk.eda_phasic(eda_signal, method='smoothmedian')
+# highpass = nk.eda_phasic(eda_signal, method='highpass')
+# cvx = nk.eda_phasic(eda_signal, method='cvxeda')
+#
+# # Extract tonic and phasic components for plotting
+# t1, p1 = smoothMedian["EDA_Tonic"].values, smoothMedian["EDA_Phasic"].values
+# t2, p2 = highpass["EDA_Tonic"].values, highpass["EDA_Phasic"].values
+# t3, p3 = cvx["EDA_Tonic"].values, cvx["EDA_Phasic"].values
+# p4, p, t4, l, d, e, obj = cvxEDA(eda_signal, delta=1./1000)
+#
+# nk.signal_plot([t1, t2, t3, t4, eda_signal], labels=["SmoothMedian", "Highpass", "CVXEDA", "CVXEDA2", "Original"])
+# plt.show()
+#
+# nk.signal_plot([p1, p2, p3, p4, eda_signal], labels=["SmoothMedian", "Highpass", "CVXEDA", "CVXEDA2", "Original"])
+# plt.show()
