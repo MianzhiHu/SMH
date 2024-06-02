@@ -113,7 +113,7 @@ combined_tonic_gsr = {}
 participants = ts_ant_gsr.columns.unique()
 
 iterations = 0
-method = 'difference'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', and 'difference'
+method = 'cda'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
 print()
 print('=========================================================================================================')
 print(f'Processing GSR data using the {method} method...')
@@ -147,12 +147,13 @@ for participant in participants:
     # ------------------------------------------------------------------------------------------------------------------
     # NeuroKit2 can implement the three methods for phasic and tonic decomposition: high-pass filter,
     # median smoothing,
+    # sparse deconvolution,
     # and convex optimization.
     # The change in the method can be done by simply changing the method parameter in the
     # eda_phasic function.
     # The default method is the high-pass filter.
     # ------------------------------------------------------------------------------------------------------------------
-    if method in ['highpass', 'smoothmedian', 'cvxeda']:
+    if method in ['highpass', 'smoothmedian', 'cvxeda', 'sparse']:
         sig = nk.eda_phasic(preprocessed, sampling_rate=sample_rate, method=method)
 
         phasic = sig['EDA_Phasic']
@@ -162,7 +163,6 @@ for participant in participants:
     # However, the continuous deconvolution analysis (CDA) can only be implemented using the pyphysio library.
     # ------------------------------------------------------------------------------------------------------------------
     if method == 'cda':
-
         # create the data for the driver
         sig = ph.create_signal(preprocessed, sampling_freq=sample_rate)
 
@@ -188,6 +188,19 @@ for participant in participants:
 
     # Reverse back to the original shape column-wise using the number of valid data points
     for j, signals in enumerate([preprocessed, phasic, tonic]):
+        # check if signal contains negative values
+        if signals.min() < 0:
+            if j == 0:
+                print(f'[{method}]: Participant {iterations} has negative values in the original signal.')
+            elif j == 1:
+                print(f'[{method}]: Participant {iterations} has negative values in the phasic signal.')
+            else:
+                print(f'[{method}]: Participant {iterations} has negative values in the tonic signal.')
+        else:
+            pass
+
+        # # standardize the data with the log transformation
+        # signals = np.log(signals + 1)
         signals_split = np.split(signals, np.cumsum(valid_data), axis=0)[:-1]
         signals_df = [pd.DataFrame(k).reset_index(drop=True) for k in signals_split]
         signals_combined = pd.concat(signals_df, axis=1)
@@ -297,8 +310,8 @@ df.drop(columns=['AnticipatoryGSR', 'OutcomeGSR'], inplace=True)
 df['AverageAnticipatoryTonicAUC'] = df.groupby('Subnum')['TonicAnticipatoryGSRAUC'].transform('mean')
 df['AverageOutcomeTonicAUC'] = df.groupby('Subnum')['TonicOutcomeGSRAUC'].transform('mean')
 
-# save the data
-df.to_csv(f'./Data/processed_data_{method}.csv', index=False)
+# # save the data
+# df.to_csv(f'./Data/processed_data_{method}.csv', index=False)
 
 print('=========================================================================================================')
 print('Done! Preprocessed data has been saved!')
@@ -371,24 +384,35 @@ print('=========================================================================
 
 
 # # Simulate EDA signal
-# from utilities.pyEDA.pyEDA.cvxEDA import cvxEDA
-#
-# eda_signal = nk.eda_simulate(duration=30, scr_number=5, drift=0.1)
+# eda_signal = nk.eda_simulate(duration=30, scr_number=3, drift=0.3, sampling_rate=sample_rate, noise=0.04)
 # eda_signal = nk.standardize(eda_signal)
+# eda_signal = nk.eda_clean(eda_signal, sampling_rate=sample_rate)
 #
 # # Decompose using different algorithms
-# smoothMedian = nk.eda_phasic(eda_signal, method='smoothmedian')
-# highpass = nk.eda_phasic(eda_signal, method='highpass')
-# cvx = nk.eda_phasic(eda_signal, method='cvxeda')
+# difference = pd.DataFrame(difference_transformation(eda_signal, interval=10, sample_rate=sample_rate))
+# smoothMedian = nk.eda_phasic(eda_signal, method='smoothmedian', sampling_rate=sample_rate)
+# highpass = nk.eda_phasic(eda_signal, method='highpass', sampling_rate=sample_rate)
+# cvx = nk.eda_phasic(eda_signal, method='cvxeda', sampling_rate=sample_rate)
+# # sparse = nk.eda_phasic(eda_signal, method='sparse', sampling_rate=sample_rate)
+#
+# cda_sig = ph.create_signal(eda_signal, sampling_freq=sample_rate)
+# cda_driver = DriverEstim()(cda_sig)
+# cda_phasic = PhasicEstim(amplitude=0.1)(cda_driver)
+# cda = cda_phasic.to_dataframe()['signal_DriverEstim_PhasicEstim']
 #
 # # Extract tonic and phasic components for plotting
-# t1, p1 = smoothMedian["EDA_Tonic"].values, smoothMedian["EDA_Phasic"].values
-# t2, p2 = highpass["EDA_Tonic"].values, highpass["EDA_Phasic"].values
-# t3, p3 = cvx["EDA_Tonic"].values, cvx["EDA_Phasic"].values
-# p4, p, t4, l, d, e, obj = cvxEDA(eda_signal, delta=1./1000)
+# p1 = difference.values.reshape(-1)
+# p2 = highpass["EDA_Phasic"].values
+# p3 = smoothMedian["EDA_Phasic"].values
+# p4 = cda.values
+# # replace values higher than 10 with average without them
+# p4[p4 > 10] = p4[p4 <= 10].mean()
+# p5 = cvx["EDA_Phasic"].values
+# # p6 = sparse["EDA_Phasic"].values
 #
-# nk.signal_plot([t1, t2, t3, t4, eda_signal], labels=["SmoothMedian", "Highpass", "CVXEDA", "CVXEDA2", "Original"])
-# plt.show()
+# nk.signal_plot([eda_signal, p1, p2, p3, p5], labels=["Original", "Difference", "Highpass", "SmoothMedian",
+#                                                      "CVX"])
+# plt.show(dpi=600)
 #
-# nk.signal_plot([p1, p2, p3, p4, eda_signal], labels=["SmoothMedian", "Highpass", "CVXEDA", "CVXEDA2", "Original"])
-# plt.show()
+# nk.signal_plot([eda_signal, p4], labels=["Original", "CDA"])
+# plt.show(dpi=600)

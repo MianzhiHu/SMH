@@ -8,7 +8,7 @@ from utilities.utility_plotting import plot_trial, plot_overall, plot_by_phase
 import statsmodels.formula.api as smf
 
 # load processed data
-path = './Data/processed_data_difference.csv'
+path = './Data/processed_data_sparse.csv'
 df = pd.read_csv(path)
 
 # split the data into training and test data
@@ -91,15 +91,15 @@ pairwise_t_test_GSR(test_data, 'AnticipatoryGSRAUC', 'testing', 2)
 pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
 pairwise_t_test_GSR(test_data, 'TonicAnticipatoryGSRAUC', 'testing', 2)
 
-# # calculate the variance of the original Iowa Gambling Task
-# deckA = [100, 100, -50, 100, -200, 100, -100, 100, -150, -250]
-# deckB = [100, 100, 100, 100, 100, 100, 100, 100, 100, -1150]
-# deckC = [50, 50, 0, 50, 0, 50, 0, 0, 0, 50]
-# deckD = [50, 50, 50, 50, 50, 50, 50, 50, 50, -200]
-# print(f'Deck A: {np.std(deckA)}')
-# print(f'Deck B: {np.std(deckB)}')
-# print(f'Deck C: {np.std(deckC)}')
-# print(f'Deck D: {np.std(deckD)}')
+# calculate the variance of the original Iowa Gambling Task
+deckA = [100, 100, -50, 100, -200, 100, -100, 100, -150, -250]
+deckB = [100, 100, 100, 100, 100, 100, 100, 100, 100, -1150]
+deckC = [50, 50, 0, 50, 0, 50, 0, 0, 0, 50]
+deckD = [50, 50, 50, 50, 50, 50, 50, 50, 50, -200]
+print(f'Deck A: {np.std(deckA)}')
+print(f'Deck B: {np.std(deckB)}')
+print(f'Deck C: {np.std(deckC)}')
+print(f'Deck D: {np.std(deckD)}')
 
 # ======================================================================================================================
 #                                                  Advanced Analysis
