@@ -7,7 +7,7 @@ from utilities.utility_processGSR import processGSR, area_under_curve
 
 
 # load processed data
-df = pd.read_csv('./Data/preliminary_data.csv')
+df = pd.read_csv('./Data/processed_data1_cvxeda.csv')
 
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']

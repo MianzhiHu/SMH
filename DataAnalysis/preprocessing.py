@@ -22,7 +22,7 @@ from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 # parse the data
 data = []
 
-with open('./Data/jatos_results_20240422185445.txt', 'r') as file:
+with open('./Data/jatos_results_20240919204322.txt', 'r') as file:
     for line in file:
         json_data = json.loads(line)
         data.append(json_data)
@@ -74,16 +74,16 @@ df = df[(df['AnticipatoryGSR'].apply(lambda x: len(x)) == 250) & (df['OutcomeGSR
 df = df.explode(behavioral_list + GSR_list)
 
 # extract the numbers from lists
-df[personality_list] = df[personality_list].applymap(lambda x: x[0] if x else np.nan)
+df[personality_list] = df[personality_list].map(lambda x: x[0] if x else np.nan)
 
 # extract the demographic data from dictionary-like strings
-df[demo_list] = df[demo_list].applymap(lambda x: ast.literal_eval(x).get('Q0', None) if x else np.nan)
+df[demo_list] = df[demo_list].map(lambda x: ast.literal_eval(x).get('Q0', None) if x else np.nan)
 
 # extract the GSR data
-df[GSR_list] = df[GSR_list].applymap(extract_samples)
+df[GSR_list] = df[GSR_list].map(extract_samples)
 
 # calculate the area under the curve for each GSR data
-df[GSR_list] = df[GSR_list].applymap(str)
+df[GSR_list] = df[GSR_list].map(str)
 ts_ant_gsr, ts_out_gsr = processGSR(df)
 
 # ======================================================================================================================
@@ -113,7 +113,7 @@ combined_tonic_gsr = {}
 participants = ts_ant_gsr.columns.unique()
 
 iterations = 0
-method = 'cda'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
+method = 'sparse'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
 print()
 print('=========================================================================================================')
 print(f'Processing GSR data using the {method} method...')
@@ -142,7 +142,7 @@ for participant in participants:
     data_flat = data_flat[~np.isnan(data_flat)]
 
     # Apply the preprocessing function
-    preprocessed = nk.signal_sanitize(nk.eda_clean(data_flat, sampling_rate=sample_rate))
+    preprocessed = nk.signal_sanitize(nk.eda_clean(data_flat, sampling_rate=sample_rate, method='biosppy'))
 
     # ------------------------------------------------------------------------------------------------------------------
     # NeuroKit2 can implement the three methods for phasic and tonic decomposition: high-pass filter,
@@ -189,7 +189,7 @@ for participant in participants:
     # Reverse back to the original shape column-wise using the number of valid data points
     for j, signals in enumerate([preprocessed, phasic, tonic]):
         # check if signal contains negative values
-        if signals.min() < 0:
+        if np.min(signals) < 0:
             if j == 0:
                 print(f'[{method}]: Participant {iterations} has negative values in the original signal.')
             elif j == 1:
@@ -221,10 +221,12 @@ phasic_combined_gsr = pd.concat(combined_phasic_gsr.values(), axis=1)
 tonic_combined_gsr = pd.concat(combined_tonic_gsr.values(), axis=1)
 
 # check the shape of the data
-max_samples = 500
-if (cleaned_combined_gsr.shape[0] == phasic_combined_gsr.shape[0] == tonic_combined_gsr.shape[0] == max_samples
+max_gsr_samples = 800
+max_trial_samples = 250 * 2
+
+if (cleaned_combined_gsr.shape[0] == phasic_combined_gsr.shape[0] == tonic_combined_gsr.shape[0] == max_gsr_samples
         and cleaned_combined_gsr.shape[1] == phasic_combined_gsr.shape[1] == tonic_combined_gsr.shape[1]
-        == len(participants) * max_samples):
+        == len(participants) * max_trial_samples):
     print('=========================================================================================================')
     print('GSR data has been successfully processed.')
     print('=========================================================================================================')
@@ -310,8 +312,8 @@ df.drop(columns=['AnticipatoryGSR', 'OutcomeGSR'], inplace=True)
 df['AverageAnticipatoryTonicAUC'] = df.groupby('Subnum')['TonicAnticipatoryGSRAUC'].transform('mean')
 df['AverageOutcomeTonicAUC'] = df.groupby('Subnum')['TonicOutcomeGSRAUC'].transform('mean')
 
-# # save the data
-# df.to_csv(f'./Data/processed_data_{method}.csv', index=False)
+# save the data
+df.to_csv(f'./Data/processed_data1_{method}.csv', index=False)
 
 print('=========================================================================================================')
 print('Done! Preprocessed data has been saved!')

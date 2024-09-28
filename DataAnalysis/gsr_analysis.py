@@ -8,7 +8,7 @@ from utilities.utility_plotting import plot_trial, plot_overall, plot_by_phase
 import statsmodels.formula.api as smf
 
 # load processed data
-path = './Data/processed_data_sparse.csv'
+path = './Data/processed_data1_cda.csv'
 df = pd.read_csv(path)
 
 # split the data into training and test data
@@ -62,28 +62,28 @@ pairwise_t_test_GSR(training_data, 'OutcomeGSRAUC', 'training')
 
 # do a simple t-test between BestOption 1 and 0
 # there doesn't seem to be a significant difference
-ttest_ind(training_data[training_data['BestOption'] == 1]['AnticipatoryGSRAUC'],
-          training_data[training_data['BestOption'] == 0]['AnticipatoryGSRAUC'])
+ttest_ind(training_data[training_data['BestOption'] == 1]['PhasicAnticipatoryGSRAUC'],
+          training_data[training_data['BestOption'] == 0]['PhasicAnticipatoryGSRAUC'])
 print('Anticipatory GSR for the best option:',
-      training_data[training_data['BestOption'] == 1]['AnticipatoryGSRAUC'].mean())
+      training_data[training_data['BestOption'] == 1]['PhasicAnticipatoryGSRAUC'].mean())
 print('Anticipatory GSR for the worst option:',
-      training_data[training_data['BestOption'] == 0]['AnticipatoryGSRAUC'].mean())
+      training_data[training_data['BestOption'] == 0]['PhasicAnticipatoryGSRAUC'].mean())
 
-ttest_ind(training_data[training_data['BestOption'] == 1]['OutcomeGSRAUC'],
-          training_data[training_data['BestOption'] == 0]['OutcomeGSRAUC'])
-print('Outcome GSR for the best option:', training_data[training_data['BestOption'] == 1]['OutcomeGSRAUC'].mean())
-print('Outcome GSR for the worst option:', training_data[training_data['BestOption'] == 0]['OutcomeGSRAUC'].mean())
+ttest_ind(training_data[training_data['BestOption'] == 1]['PhasicOutcomeGSRAUC'],
+          training_data[training_data['BestOption'] == 0]['PhasicOutcomeGSRAUC'])
+print('Outcome GSR for the best option:', training_data[training_data['BestOption'] == 1]['PhasicOutcomeGSRAUC'].mean())
+print('Outcome GSR for the worst option:', training_data[training_data['BestOption'] == 0]['PhasicOutcomeGSRAUC'].mean())
 
 # test data
-ttest_ind(test_data[test_data['BestOption'] == 1]['AnticipatoryGSRAUC'],
-          test_data[test_data['BestOption'] == 0]['AnticipatoryGSRAUC'])
-print('Outcome GSR for the best option:', test_data[test_data['BestOption'] == 1]['AnticipatoryGSRAUC'].mean())
-print('Outcome GSR for the worst option:', test_data[test_data['BestOption'] == 0]['AnticipatoryGSRAUC'].mean())
+ttest_ind(test_data[test_data['BestOption'] == 1]['PhasicAnticipatoryGSRAUC'],
+          test_data[test_data['BestOption'] == 0]['PhasicAnticipatoryGSRAUC'])
+print('Outcome GSR for the best option:', test_data[test_data['BestOption'] == 1]['PhasicAnticipatoryGSRAUC'].mean())
+print('Outcome GSR for the worst option:', test_data[test_data['BestOption'] == 0]['PhasicAnticipatoryGSRAUC'].mean())
 
-ttest_ind(df[df['BestOption'] == 1]['AnticipatoryGSRAUC'],
-          df[df['BestOption'] == 0]['AnticipatoryGSRAUC'])
-print('Outcome GSR for the best option:', df[df['BestOption'] == 1]['AnticipatoryGSRAUC'].mean())
-print('Outcome GSR for the worst option:', df[df['BestOption'] == 0]['AnticipatoryGSRAUC'].mean())
+ttest_ind(df[df['BestOption'] == 1]['PhasicAnticipatoryGSRAUC'],
+          df[df['BestOption'] == 0]['PhasicAnticipatoryGSRAUC'])
+print('Outcome GSR for the best option:', df[df['BestOption'] == 1]['PhasicAnticipatoryGSRAUC'].mean())
+print('Outcome GSR for the worst option:', df[df['BestOption'] == 0]['PhasicAnticipatoryGSRAUC'].mean())
 
 
 # CA trials
@@ -109,10 +109,10 @@ df['BestOption'] = df['BestOption'].astype('category')
 test_CA.loc[:, 'BestOption'] = test_CA['BestOption'].astype('category')
 test_CA.loc[:, 'Condition'] = test_CA['Condition'].astype('category')
 
-model = smf.mixedlm("AnticipatoryGSRAUC ~ BestOption * Condition", test_CA, groups=test_CA["Subnum"]).fit()
+model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ BestOption * Condition", test_CA, groups=test_CA["Subnum"]).fit()
 print(model.summary())
 
-model = smf.mixedlm("OutcomeGSRAUC ~ BestOption + Condition", df, groups=df["Subnum"]).fit()
+model = smf.mixedlm("PhasicOutcomeGSRAUC ~ BestOption + Condition", df, groups=df["Subnum"]).fit()
 print(model.summary())
 
 
