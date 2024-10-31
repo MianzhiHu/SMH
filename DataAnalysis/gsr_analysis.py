@@ -8,7 +8,7 @@ from utilities.utility_plotting import plot_trial, plot_overall, plot_by_phase
 import statsmodels.formula.api as smf
 
 # load processed data
-path = './Data/processed_data1_cda.csv'
+path = './Data/processed_data_cda.csv'
 df = pd.read_csv(path)
 
 # split the data into training and test data
@@ -122,7 +122,7 @@ print(model.summary())
 # plot out the anticipatory GSR data by condition
 test_AD = test_data[test_data['SetSeen '] == 4]
 
-for signal in ['AnticipatoryGSRAUC', 'PhasicAnticipatoryGSRAUC', 'TonicAnticipatoryGSRAUC']:
+for signal in ['PhasicOutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC']:
     plot_trial(test_CA, signal, f'{signal} (uS/sec)', trial="CA")
 
 # plot out the overall anticipatory and outcome GSR data by best option

@@ -7,6 +7,7 @@ import seaborn as sns
 import json
 import neurokit2 as nk
 import io
+import os
 import contextlib
 from utilities.utility_processGSR import (extract_samples, processGSR, rename_columns, interleave_columns,
                                           difference_transformation, unzip_combined_data, area_under_curve,
@@ -18,16 +19,34 @@ from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 # ======================================================================================================================
 # Load data from JATOS generated file
 # ======================================================================================================================
+# # parse the data
+# data = []
+#
+# with open('./Data/jatos_results_data_20240919204609.txt', 'r') as file:
+#     for line in file:
+#         json_data = json.loads(line)
+#         data.append(json_data)
+#
+# data = pd.DataFrame(data)
 
-# parse the data
-data = []
+# Specify the folder containing the .txt files
+directory_path = './Data'
 
-with open('./Data/jatos_results_20240919204322.txt', 'r') as file:
-    for line in file:
-        json_data = json.loads(line)
-        data.append(json_data)
+# Initialize a list to store all data
+all_data = []
 
-data = pd.DataFrame(data)
+# Iterate over each .txt file in the directory and read the contents
+for filename in os.listdir(directory_path):
+    if filename.endswith('.txt'):
+        file_path = os.path.join(directory_path, filename)
+        print(f"Reading file: {file_path}")
+        with open(file_path, 'r') as file:
+            for line in file:
+                json_data = json.loads(line)
+                all_data.append(json_data)
+
+# Combine all data into a single DataFrame
+data = pd.DataFrame(all_data)
 
 # ======================================================================================================================
 # Preprocess behavioral data
@@ -113,7 +132,7 @@ combined_tonic_gsr = {}
 participants = ts_ant_gsr.columns.unique()
 
 iterations = 0
-method = 'sparse'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
+method = 'cda'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
 print()
 print('=========================================================================================================')
 print(f'Processing GSR data using the {method} method...')
@@ -313,7 +332,7 @@ df['AverageAnticipatoryTonicAUC'] = df.groupby('Subnum')['TonicAnticipatoryGSRAU
 df['AverageOutcomeTonicAUC'] = df.groupby('Subnum')['TonicOutcomeGSRAUC'].transform('mean')
 
 # save the data
-df.to_csv(f'./Data/processed_data1_{method}.csv', index=False)
+df.to_csv(f'./Data/processed_data_{method}.csv', index=False)
 
 print('=========================================================================================================')
 print('Done! Preprocessed data has been saved!')
