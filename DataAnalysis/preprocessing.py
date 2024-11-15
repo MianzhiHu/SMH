@@ -22,7 +22,7 @@ from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 # # parse the data
 # data = []
 #
-# with open('./Data/jatos_results_data_20240919204609.txt', 'r') as file:
+# with open('./Data/jatos_results_data_20241114213941.txt', 'r') as file:
 #     for line in file:
 #         json_data = json.loads(line)
 #         data.append(json_data)
@@ -132,7 +132,7 @@ combined_tonic_gsr = {}
 participants = ts_ant_gsr.columns.unique()
 
 iterations = 0
-method = 'cda'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
+method = 'cvxeda'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
 print()
 print('=========================================================================================================')
 print(f'Processing GSR data using the {method} method...')

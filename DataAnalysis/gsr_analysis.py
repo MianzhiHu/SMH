@@ -50,10 +50,10 @@ print(magnitude_training['Subnum'].nunique())
 
 # test whether people show higher outcome GSR when they choose the bad option
 # there doesn't seem to be a significant difference
-ttest_ind(training_data[training_data['Loss'] == 0]['OutcomeGSRAUC'],
-          training_data[training_data['Loss'] == 1]['OutcomeGSRAUC'])
-print('Outcome GSR for the losses:', training_data[training_data['Loss'] == 1]['OutcomeGSRAUC'].mean())
-print('Outcome GSR for the wins:', training_data[training_data['Loss'] == 0]['OutcomeGSRAUC'].mean())
+ttest_ind(training_data[training_data['Loss'] == 0]['PhasicOutcomeGSRAUC'],
+          training_data[training_data['Loss'] == 1]['PhasicOutcomeGSRAUC'])
+print('Outcome GSR for the losses:', training_data[training_data['Loss'] == 1]['PhasicOutcomeGSRAUC'].mean())
+print('Outcome GSR for the wins:', training_data[training_data['Loss'] == 0]['PhasicOutcomeGSRAUC'].mean())
 
 # now analyze anticipatory and outcome GSR
 # there doesn't seem to be a significant difference
@@ -126,7 +126,7 @@ for signal in ['PhasicOutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC']:
     plot_trial(test_CA, signal, f'{signal} (uS/sec)', trial="CA")
 
 # plot out the overall anticipatory and outcome GSR data by best option
-plot_overall(test_data, 'AUC (uS/sec)', 'test')
+plot_overall(test_data, 'AUC (uS/sec)', 'train')
 
 # plot out the anticipatory and outcome GSR data by phase
 plot_by_phase(df, 'PhasicAnticipatoryGSRAUC', 'Anticipatory AUC (uS/sec)')

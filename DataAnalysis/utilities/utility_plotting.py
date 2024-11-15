@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 # Function to plot the anticipatory GSR data in CA trials by condition
-def plot_trial(data, signal='AnticipatoryGSRAUC', ylabel='Anticipatory AUC (uS/sec)', trial="CA"):
+def plot_trial(data, signal='PhasicAnticipatoryGSRAUC', ylabel='Anticipatory AUC (uS/sec)', trial="CA"):
     plt.figure(figsize=(8, 6))
     sns.set_style("white")
     sns.barplot(data=data, x='Condition', y=signal, hue='BestOption')
@@ -21,7 +21,7 @@ def plot_trial(data, signal='AnticipatoryGSRAUC', ylabel='Anticipatory AUC (uS/s
 
 # Function to plot the overall anticipatory and outcome GSR data by best option
 def plot_overall(data, ylabel='AUC (uS/sec)', phase='test'):
-    df_melted = data.melt(id_vars='BestOption', value_vars=['AnticipatoryGSRAUC', 'OutcomeGSRAUC'],
+    df_melted = data.melt(id_vars='BestOption', value_vars=['PhasicAnticipatoryGSRAUC', 'PhasicOutcomeGSRAUC'],
                           var_name='GSR_Type', value_name='AUC')
 
     plt.figure(figsize=(8, 6))
@@ -38,7 +38,7 @@ def plot_overall(data, ylabel='AUC (uS/sec)', phase='test'):
 
 
 # Function to plot the anticipatory and outcome GSR data by phase
-def plot_by_phase(data, signal='AnticipatoryGSRAUC', ylabel='Anticipatory AUC (uS/sec)'):
+def plot_by_phase(data, signal='PhasicAnticipatoryGSRAUC', ylabel='Anticipatory AUC (uS/sec)'):
     plt.figure(figsize=(8, 6))
     sns.set_style("white")
     sns.lineplot(data=data, x='Phase', y=signal, hue='BestOption')
