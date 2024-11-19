@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from utilities.utility_processGSR import processGSR, area_under_curve, pairwise_t_test_GSR
 from utilities.utility_plotting import plot_trial, plot_overall, plot_by_phase
 import statsmodels.formula.api as smf
+import statsmodels.api as sm
+from statsmodels.graphics.factorplots import interaction_plot
 
 # load processed data
 path = './Data/processed_data_cda.csv'
@@ -107,13 +109,30 @@ print(f'Deck D: {np.std(deckD)}')
 # turn best option into a categorical variable
 df['BestOption'] = df['BestOption'].astype('category')
 test_CA.loc[:, 'BestOption'] = test_CA['BestOption'].astype('category')
-test_CA.loc[:, 'Condition'] = test_CA['Condition'].astype('category')
+test_CA.loc[:, 'Condition'] = test_CA['Condition'].astype('str')
 
 model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ BestOption * Condition", test_CA, groups=test_CA["Subnum"]).fit()
 print(model.summary())
 
 model = smf.mixedlm("PhasicOutcomeGSRAUC ~ BestOption + Condition", df, groups=df["Subnum"]).fit()
 print(model.summary())
+
+# two-way ANOVA
+model = smf.ols("PhasicAnticipatoryGSRAUC ~ C(BestOption) + C(Condition) + C(BestOption) * C(Condition)",
+                test_CA).fit()
+print(sm.stats.anova_lm(model))
+
+sns.pointplot(
+    data=test_CA,
+    x='BestOption',
+    y='PhasicAnticipatoryGSRAUC',
+    hue='Condition',
+    dodge=True,
+    errorbar='se'
+)
+plt.title('Interaction Plot')
+plt.savefig('./figures/interaction_plot.png', dpi=600)
+plt.show()
 
 
 # ======================================================================================================================
