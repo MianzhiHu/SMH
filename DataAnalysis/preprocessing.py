@@ -13,6 +13,7 @@ from utilities.utility_processGSR import (extract_samples, processGSR, rename_co
                                           difference_transformation, unzip_combined_data, area_under_curve,
                                           check_best_option)
 from utilities.pyEDA.main import *
+from utilities.dfa import *
 import pyphysio as ph
 from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 
@@ -264,6 +265,9 @@ df['TonicAnticipatoryGSRAUC'] = area_under_curve(tonic_ant_gsr)
 df['PhasicAnticipatoryGSRAUC'] = area_under_curve(phasic_ant_gsr)
 df['TonicOutcomeGSRAUC'] = area_under_curve(tonic_out_gsr)
 df['PhasicOutcomeGSRAUC'] = area_under_curve(phasic_out_gsr)
+df['GSRAUC'] = df['AnticipatoryGSRAUC'] + df['OutcomeGSRAUC']
+df['TonicGSRAUC'] = df['TonicAnticipatoryGSRAUC'] + df['TonicOutcomeGSRAUC']
+df['PhasicGSRAUC'] = df['PhasicAnticipatoryGSRAUC'] + df['PhasicOutcomeGSRAUC']
 
 # ======================================================================================================================
 # Some final cleaning steps
