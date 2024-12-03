@@ -1,19 +1,11 @@
 import pandas as pd
-import numpy as np
 import ast
-import matplotlib.pyplot as plt
-import requests
-import seaborn as sns
 import json
 import neurokit2 as nk
-import io
-import os
-import contextlib
 from utilities.utility_processGSR import (extract_samples, processGSR, rename_columns, interleave_columns,
                                           difference_transformation, unzip_combined_data, area_under_curve,
                                           check_best_option)
 from utilities.pyEDA.main import *
-from utilities.dfa import *
 import pyphysio as ph
 from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 
