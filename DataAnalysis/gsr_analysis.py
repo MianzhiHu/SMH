@@ -97,9 +97,7 @@ print('Outcome GSR for the worst option:', df[df['BestOption'] == 0]['PhasicAnti
 
 
 # CA trials
-pairwise_t_test_GSR(test_data, 'AnticipatoryGSRAUC', 'testing', 2)
 pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
-pairwise_t_test_GSR(test_data, 'TonicAnticipatoryGSRAUC', 'testing', 2)
 
 # t-test between conditions
 print(ttest_ind(df[df['Condition'] == 'Baseline'].groupby('Subnum')['PhasicGSRAUC'].mean(),
@@ -122,7 +120,7 @@ print(model.summary())
 model = smf.mixedlm("PhasicOutcomeGSRAUC ~ BestOption + Condition", df, groups=df["Subnum"]).fit()
 print(model.summary())
 
-model = smf.mixedlm("PhasicGSRAUC ~ Condition", df, groups=df["Subnum"]).fit()
+model = smf.mixedlm("PhasicGSRAUC ~ C(Condition)", df, groups=df["Subnum"]).fit()
 print(model.summary())
 
 # two-way ANOVA

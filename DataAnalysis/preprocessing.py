@@ -77,18 +77,19 @@ df = data.groupby(data.index // 10).first()
 df.reset_index(drop=True, inplace=True)
 
 # check the number of GSR data points
-print(df['AnticipatoryGSR'].apply(lambda x: len(x)).value_counts())
+print(df['AnticipatoryGSR'].apply(lambda x: len([lst for lst in x if len(lst) > 0])).value_counts())
 print()
 print(f'Missing data percentage in AnticipatoryGSR: '
-      f'{(1 - df["AnticipatoryGSR"].apply(lambda x: len(x)).value_counts()[250] / len(df)) * 100:.2f}%')
+      f'{df['AnticipatoryGSR'].apply(lambda x: len([lst for lst in x if len(lst) > 0]) != 250).mean() * 100:.2f}%')
 print()
-print(df['OutcomeGSR'].apply(lambda x: len(x)).value_counts())
+print(df['OutcomeGSR'].apply(lambda x: len([lst for lst in x if len(lst) > 0])).value_counts())
 print()
 print(f'Missing data percentage in OutcomeGSR: '
-      f'{(1 - df["OutcomeGSR"].apply(lambda x: len(x)).value_counts()[250] / len(df)) * 100:.2f}%')
+      f'{(df['OutcomeGSR'].apply(lambda x: len([lst for lst in x if len(lst) > 0]) != 250)).mean() * 100:.2f}%')
 
 # remove data where either anticipatory or outcome GSR has less than 250 data points
-df = df[(df['AnticipatoryGSR'].apply(lambda x: len(x)) == 250) & (df['OutcomeGSR'].apply(lambda x: len(x)) == 250)]
+df = df[(df['AnticipatoryGSR'].apply(lambda x: len([lst for lst in x if len(lst) > 0])) == 250) &
+        (df['OutcomeGSR'].apply(lambda x: len([lst for lst in x if len(lst) > 0])) == 250)]
 
 # explode the data
 df = df.explode(behavioral_list + GSR_list)
