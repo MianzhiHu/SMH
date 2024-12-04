@@ -10,18 +10,23 @@ import statsmodels.api as sm
 from statsmodels.graphics.factorplots import interaction_plot
 
 # load processed data
-path = './Data/processed_data_cda.csv'
+path = './Data/processed_data_cda_modeled.csv'
 df = pd.read_csv(path)
 
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']
 test_data = df[df['Phase'] == 'Test']
-test_CA = test_data[test_data['SetSeen '] == 2]
+train_AB = training_data[training_data['SetSeen.'] == 0]
+train_CD = training_data[training_data['SetSeen.'] == 1]
+test_CA = test_data[test_data['SetSeen.'] == 2]
+test_CB = test_data[test_data['SetSeen.'] == 3]
+test_AD = test_data[test_data['SetSeen.'] == 4]
+test_BD = test_data[test_data['SetSeen.'] == 5]
 
 # remove trial-level data and save the individual-level data as a separate file for future use
 df_individual = df.drop_duplicates(subset='Subnum').reset_index(drop=True)
 df_individual = df_individual.drop(columns=['Trial_Index', 'ReactTime', 'Reward', 'BestOption', 'KeyResponse',
-                                            'SetSeen ', 'OptionRwdMean', 'Phase', 'AnticipatoryGSRAUC',
+                                            'SetSeen.', 'OptionRwdMean', 'Phase', 'AnticipatoryGSRAUC',
                                             'OutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC', 'TonicAnticipatoryGSRAUC',
                                             'PhasicOutcomeGSRAUC', 'TonicOutcomeGSRAUC'])
 # df_individual.to_csv('./Data/individual_data.csv', index=False)
@@ -39,8 +44,8 @@ training_data.loc[:, 'Loss'] = (training_data['Cumulative_Average'] > training_d
 
 # record win stay lose shift
 # track the previous trial's reward by trial type
-training_data.loc[:, 'Previous_Loss'] = training_data.groupby(['Subnum', 'SetSeen '])['Loss'].shift(1).copy()
-training_data.loc[:, 'Previous_Choice'] = training_data.groupby(['Subnum', 'SetSeen '])['KeyResponse'].shift(1).copy()
+training_data.loc[:, 'Previous_Loss'] = training_data.groupby(['Subnum', 'SetSeen.'])['Loss'].shift(1).copy()
+training_data.loc[:, 'Previous_Choice'] = training_data.groupby(['Subnum', 'SetSeen.'])['KeyResponse'].shift(1).copy()
 training_data.loc[:, 'WSLS'] = ((training_data['Previous_Loss'] == 0) & (training_data['KeyResponse'] == training_data['Previous_Choice']) |
                                 (training_data['Previous_Loss'] == 1) & (training_data['KeyResponse'] != training_data['Previous_Choice'])).astype(int).copy()
 print(training_data.groupby('Condition')['WSLS'].mean())
@@ -102,9 +107,12 @@ pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
 # t-test between conditions
 print(ttest_ind(df[df['Condition'] == 'Baseline'].groupby('Subnum')['PhasicGSRAUC'].mean(),
                 df[df['Condition'] == 'Frequency'].groupby('Subnum')['PhasicGSRAUC'].mean()))
-print(f'Baseline Anticipatory: {df[df["Condition"] == "Baseline"]["PhasicGSRAUC"].mean()}')
-print(f'Frequency Anticipatory: {df[df["Condition"] == "Frequency"]["PhasicGSRAUC"].mean()}')
-print(f'Magnitude Anticipatory: {df[df["Condition"] == "Magnitude"]["PhasicGSRAUC"].mean()}')
+print(f'Baseline Phasic: {df[df["Condition"] == "Baseline"]["PhasicGSRAUC"].mean()}')
+print(f'Frequency Phasic: {df[df["Condition"] == "Frequency"]["PhasicGSRAUC"].mean()}')
+print(f'Magnitude Phasic: {df[df["Condition"] == "Magnitude"]["PhasicGSRAUC"].mean()}')
+print(f'Baseline Tonic: {df[df["Condition"] == "Baseline"]["TonicGSRAUC"].mean()}')
+print(f'Frequency Tonic: {df[df["Condition"] == "Frequency"]["TonicGSRAUC"].mean()}')
+print(f'Magnitude Tonic: {df[df["Condition"] == "Magnitude"]["TonicGSRAUC"].mean()}')
 
 # ======================================================================================================================
 #                                                  Advanced Analysis
@@ -117,7 +125,10 @@ test_CA.loc[:, 'Condition'] = test_CA['Condition'].astype('str')
 model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ BestOption * Condition", test_CA, groups=test_CA["Subnum"]).fit()
 print(model.summary())
 
-model = smf.mixedlm("PhasicOutcomeGSRAUC ~ BestOption + Condition", df, groups=df["Subnum"]).fit()
+model = smf.mixedlm("PhasicOutcomeGSRAUC ~ BestOption + Condition", training_data, groups=training_data["Subnum"]).fit()
+print(model.summary())
+
+model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight + BestOption * SetSeen.", magnitude_testing, groups=magnitude_testing["Subnum"]).fit()
 print(model.summary())
 
 model = smf.mixedlm("PhasicGSRAUC ~ C(Condition)", df, groups=df["Subnum"]).fit()
@@ -125,19 +136,19 @@ print(model.summary())
 
 # two-way ANOVA
 model = smf.ols("PhasicAnticipatoryGSRAUC ~ C(BestOption) + C(Condition) + C(BestOption) * C(Condition)",
-                test_CA).fit()
+                test_BD).fit()
 print(sm.stats.anova_lm(model))
 
 sns.pointplot(
-    data=test_CA,
+    data=train_CD,
     x='BestOption',
     y='PhasicAnticipatoryGSRAUC',
     hue='Condition',
     dodge=True,
-    errorbar='se'
+    errorbar='ci'
 )
-plt.title('Interaction Plot')
-plt.savefig('./figures/interaction_plot.png', dpi=600)
+plt.title('CD')
+plt.savefig('./figures/interaction_plot_CD.png', dpi=600)
 plt.show()
 
 
@@ -145,8 +156,6 @@ plt.show()
 #                                                  Plots
 # ======================================================================================================================
 # plot out the anticipatory GSR data by condition
-test_AD = test_data[test_data['SetSeen '] == 4]
-
 for signal in ['PhasicOutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC']:
     plot_trial(test_CA, signal, f'{signal} (uS/sec)', trial="CA")
 
@@ -154,4 +163,4 @@ for signal in ['PhasicOutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC']:
 plot_overall(test_data, 'AUC (uS/sec)', 'train')
 
 # plot out the anticipatory and outcome GSR data by phase
-plot_by_phase(df, 'PhasicAnticipatoryGSRAUC', 'Anticipatory AUC (uS/sec)')
+plot_by_phase(df, 'PhasicOutcomeGSRAUC', 'Anticipatory AUC (uS/sec)')

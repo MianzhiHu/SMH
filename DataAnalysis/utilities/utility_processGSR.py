@@ -149,7 +149,7 @@ def pairwise_t_test_GSR(df, GSR_type, data_type, trial_type=None):
                 print()
 
         elif data_type == 'testing':
-            data_selected = df[(df['Condition'] == condition) & (df['SetSeen '] == trial_type)]
+            data_selected = df[(df['Condition'] == condition) & (df['SetSeen.'] == trial_type)]
             print(ttest_ind(data_selected[data_selected['BestOption'] == 0][GSR_type],
                             data_selected[data_selected['BestOption'] == 1][GSR_type]))
             print('Anticipatory GSR for C:', data_selected[data_selected['BestOption'] == 1][GSR_type].mean())

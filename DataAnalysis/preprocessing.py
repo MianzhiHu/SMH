@@ -7,6 +7,7 @@ from utilities.utility_processGSR import (extract_samples, processGSR, rename_co
                                           check_best_option)
 from utilities.pyEDA.main import *
 import pyphysio as ph
+from utils.dfa import *
 from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 
 # ======================================================================================================================
@@ -23,7 +24,8 @@ from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 # data = pd.DataFrame(data)
 
 # Specify the folder containing the .txt files
-directory_path = './Data'
+# directory_path = './Data'
+directory_path = './Data/Test Data'
 
 # Initialize a list to store all data
 all_data = []
@@ -126,7 +128,7 @@ combined_tonic_gsr = {}
 participants = ts_ant_gsr.columns.unique()
 
 iterations = 0
-method = 'cda'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
+method = 'cvxeda'  # choose from 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'sparse', and 'difference'
 print()
 print('=========================================================================================================')
 print(f'Processing GSR data using the {method} method...')
@@ -251,6 +253,10 @@ cleaned_ant_gsr, cleaned_out_gsr = unzip_combined_data(cleaned_combined_gsr)
 phasic_ant_gsr, phasic_out_gsr = unzip_combined_data(phasic_combined_gsr)
 tonic_ant_gsr, tonic_out_gsr = unzip_combined_data(tonic_combined_gsr)
 
+# save the data
+phasic_ant_gsr.to_csv(f'./Data/TEST_phasic_ant_gsr_{method}.csv', index=False)
+phasic_out_gsr.to_csv(f'./Data/TEST_phasic_out_gsr_{method}.csv', index=False)
+
 # Calculate the area under the curve for each GSR data
 df['AnticipatoryGSRAUC'] = area_under_curve(cleaned_ant_gsr)
 df['OutcomeGSRAUC'] = area_under_curve(cleaned_out_gsr)
@@ -261,6 +267,29 @@ df['PhasicOutcomeGSRAUC'] = area_under_curve(phasic_out_gsr)
 df['GSRAUC'] = df['AnticipatoryGSRAUC'] + df['OutcomeGSRAUC']
 df['TonicGSRAUC'] = df['TonicAnticipatoryGSRAUC'] + df['TonicOutcomeGSRAUC']
 df['PhasicGSRAUC'] = df['PhasicAnticipatoryGSRAUC'] + df['PhasicOutcomeGSRAUC']
+
+# # Calculate Hurst exponent
+# hurst = []
+# r2 = []
+# min_w = 50
+# for i in range(phasic_ant_gsr.shape[1]):
+#     selected = phasic_ant_gsr.to_numpy()[:, i]
+#     selected_cleaned = selected[~np.isnan(selected)].reshape(-1, 1)
+#     max_w = 200
+#     h, _, r = dfa(selected_cleaned, max_window_size=max_w, min_window_size=min_w, return_confidence_interval=True)
+#     hurst.append(h[0])
+#     r2.append(r[0])
+#
+# print(f'Max Hurst exponent: {max(hurst)}; Min Hurst exponent: {min(hurst)}')
+# print(f'Percentage of Hurst exponent between 0 and 1: {len([h for h in hurst if 0 < h < 1]) / len(hurst) * 100:.2f}%')
+# # print the r-squared values for those Hurst not between 0 and 1
+# # record the indices of the Hurst exponent that are not between 0 and 1
+# indices = [i for i, h in enumerate(hurst) if h < 0 or h > 1]
+# # use these indices to print all the r-squared values
+# print(f'R-squared values for Hurst exponent not between 0 and 1: {np.array(r2)[indices]}')
+#
+# df['Hurst'] = hurst
+
 
 # ======================================================================================================================
 # Some final cleaning steps
@@ -329,7 +358,7 @@ df['AverageAnticipatoryTonicAUC'] = df.groupby('Subnum')['TonicAnticipatoryGSRAU
 df['AverageOutcomeTonicAUC'] = df.groupby('Subnum')['TonicOutcomeGSRAUC'].transform('mean')
 
 # save the data
-df.to_csv(f'./Data/processed_data_{method}.csv', index=False)
+df.to_csv(f'./Data/TEST_processed_data_{method}.csv', index=False)
 
 print('=========================================================================================================')
 print('Done! Preprocessed data has been saved!')

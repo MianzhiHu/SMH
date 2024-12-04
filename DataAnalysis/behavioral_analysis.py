@@ -7,12 +7,12 @@ from utilities.utility_processGSR import processGSR, area_under_curve
 
 
 # load processed data
-df = pd.read_csv('./Data/processed_data_cda.csv')
+df = pd.read_csv('./Data/processed_data_cda_modeled.csv')
 
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']
 test_data = df[df['Phase'] == 'Test']
-CA_data = test_data[test_data['SetSeen '] == 2]
+CA_data = test_data[test_data['SetSeen.'] == 2]
 
 # one sample t-tests
 print(f'[Baseline] {ttest_1samp(CA_data[CA_data['Condition'] == 'Baseline'].groupby('Subnum')['BestOption'].mean(), 0.5)}')
@@ -21,7 +21,7 @@ print(f'[Magnitude] {ttest_1samp(CA_data[CA_data['Condition'] == 'Magnitude'].gr
 
 
 # calculate the percentage of selecting the best option
-prop_optimal = df.groupby(['Subnum', 'Condition', 'SetSeen '])['BestOption'].mean().reset_index()
+prop_optimal = df.groupby(['Subnum', 'Condition', 'SetSeen.'])['BestOption'].mean().reset_index()
 
 # plot the percentage of selecting the best option
 x_labels = ['AB', 'CD', 'CA', 'CB', 'AD', 'BD']
