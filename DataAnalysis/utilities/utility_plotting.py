@@ -41,9 +41,9 @@ def plot_overall(data, ylabel='AUC (uS/sec)', phase='test'):
 def plot_by_phase(data, signal='PhasicAnticipatoryGSRAUC', ylabel='Anticipatory AUC (uS/sec)'):
     plt.figure(figsize=(8, 6))
     sns.set_style("white")
-    sns.lineplot(data=data, x='Phase', y=signal, hue='BestOption')
+    sns.lineplot(data=data, x='Phase', y=signal, hue='KeyResponse', errorbar='se')
     handles, labels = plt.gca().get_legend_handles_labels()
-    plt.legend(title='Selected Option', loc='upper left', labels=['Suboptimal Option', 'Optimal Option'], handles=handles)
+    plt.legend(title='Selected Option', loc='upper left', labels=['A', 'B', 'C', 'D'], handles=handles)
     plt.xlabel('')
     plt.ylabel(ylabel)
     sns.despine()
