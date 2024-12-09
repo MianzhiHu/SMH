@@ -11,7 +11,7 @@ import statsmodels.api as sm
 from statsmodels.graphics.factorplots import interaction_plot
 
 # load processed data
-# path = './Data/processed_data_cda_modeled.csv'
+# path = './Data/processed_data_modeled.csv'
 
 # path = './Data/processed_data_auto.csv'
 # path = './Data/processed_data_trial_auto.csv'
@@ -21,11 +21,13 @@ from statsmodels.graphics.factorplots import interaction_plot
 # path = './Data/processed_data_trial_smoothmedian.csv'
 # path = './Data/processed_data_experiment_cvxeda.csv'
 # path = './Data/processed_data_trial_cvxeda.csv'
-path = './Data/processed_data_experiment_cda.csv'
+path = './Data/good_learner_data_experiment_cvxeda.csv'
+# path = './Data/processed_data_experiment_cda.csv'
 # path = './Data/processed_data_trial_cda.csv'
 # path = './Data/processed_data_combined.csv'
 # path = './Data/processed_data_experiment_SparsEDA.csv'
 # path = './Data/processed_data_trial_SparsEDA.csv'
+
 df = pd.read_csv(path)
 
 # remove nan values
@@ -38,17 +40,17 @@ df = df.dropna()
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']
 test_data = df[df['Phase'] == 'Test']
-train_AB = training_data[training_data['SetSeen.'] == 0]
-train_CD = training_data[training_data['SetSeen.'] == 1]
-test_CA = test_data[test_data['SetSeen.'] == 2]
-test_CB = test_data[test_data['SetSeen.'] == 3]
-test_AD = test_data[test_data['SetSeen.'] == 4]
-test_BD = test_data[test_data['SetSeen.'] == 5]
+train_AB = training_data[training_data['TrialType'] == 0]
+train_CD = training_data[training_data['TrialType'] == 1]
+test_CA = test_data[test_data['TrialType'] == 2]
+test_CB = test_data[test_data['TrialType'] == 3]
+test_AD = test_data[test_data['TrialType'] == 4]
+test_BD = test_data[test_data['TrialType'] == 5]
 
 # # remove trial-level data and save the individual-level data as a separate file for future use
 # df_individual = df.drop_duplicates(subset='Subnum').reset_index(drop=True)
 # df_individual = df_individual.drop(columns=['Trial_Index', 'ReactTime', 'Reward', 'BestOption', 'KeyResponse',
-#                                             'SetSeen.', 'OptionRwdMean', 'Phase', 'AnticipatoryGSRAUC',
+#                                             'TrialType', 'OptionRwdMean', 'Phase', 'AnticipatoryGSRAUC',
 #                                             'OutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC', 'TonicAnticipatoryGSRAUC',
 #                                             'PhasicOutcomeGSRAUC', 'TonicOutcomeGSRAUC'])
 # # df_individual.to_csv('./Data/individual_data.csv', index=False)
@@ -66,8 +68,8 @@ training_data.loc[:, 'Loss'] = (training_data['Cumulative_Average'] > training_d
 
 # record win stay lose shift
 # track the previous trial's reward by trial type
-training_data.loc[:, 'Previous_Loss'] = training_data.groupby(['Subnum', 'SetSeen.'])['Loss'].shift(1).copy()
-training_data.loc[:, 'Previous_Choice'] = training_data.groupby(['Subnum', 'SetSeen.'])['KeyResponse'].shift(1).copy()
+training_data.loc[:, 'Previous_Loss'] = training_data.groupby(['Subnum', 'TrialType'])['Loss'].shift(1).copy()
+training_data.loc[:, 'Previous_Choice'] = training_data.groupby(['Subnum', 'TrialType'])['KeyResponse'].shift(1).copy()
 training_data.loc[:, 'WSLS'] = ((training_data['Previous_Loss'] == 0) & (training_data['KeyResponse'] == training_data['Previous_Choice']) |
                                 (training_data['Previous_Loss'] == 1) & (training_data['KeyResponse'] != training_data['Previous_Choice'])).astype(int).copy()
 print(training_data.groupby('Condition')['WSLS'].mean())
@@ -130,14 +132,14 @@ print('Outcome GSR for the worst option:', df[df['BestOption'] == 0]['PhasicAnti
 pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
 
 # t-test between conditions
-print(ttest_ind(df[df['Condition'] == 'Baseline'].groupby('Subnum')['TonicGSRAUC'].mean(),
-                df[df['Condition'] == 'Magnitude'].groupby('Subnum')['TonicGSRAUC'].mean()))
-print(f'Baseline Phasic: {df[df["Condition"] == "Baseline"]["PhasicGSRAUC"].mean()}')
-print(f'Frequency Phasic: {df[df["Condition"] == "Frequency"]["PhasicGSRAUC"].mean()}')
-print(f'Magnitude Phasic: {df[df["Condition"] == "Magnitude"]["PhasicGSRAUC"].mean()}')
-print(f'Baseline Tonic: {df[df["Condition"] == "Baseline"]["TonicGSRAUC"].mean()}')
-print(f'Frequency Tonic: {df[df["Condition"] == "Frequency"]["TonicGSRAUC"].mean()}')
-print(f'Magnitude Tonic: {df[df["Condition"] == "Magnitude"]["TonicGSRAUC"].mean()}')
+print(ttest_ind(df[df['Condition'] == 'Baseline'].groupby('Subnum')['PhasicAnticipatoryGSRAUC'].mean(),
+                df[df['Condition'] == 'Frequency'].groupby('Subnum')['PhasicAnticipatoryGSRAUC'].mean()))
+print(f'Baseline Phasic: {df[df["Condition"] == "Baseline"]["PhasicAnticipatoryGSRAUC"].mean()}')
+print(f'Frequency Phasic: {df[df["Condition"] == "Frequency"]["PhasicAnticipatoryGSRAUC"].mean()}')
+print(f'Magnitude Phasic: {df[df["Condition"] == "Magnitude"]["PhasicAnticipatoryGSRAUC"].mean()}')
+print(f'Baseline Tonic: {df[df["Condition"] == "Baseline"]["TonicAnticipatoryGSRAUC"].mean()}')
+print(f'Frequency Tonic: {df[df["Condition"] == "Frequency"]["TonicAnticipatoryGSRAUC"].mean()}')
+print(f'Magnitude Tonic: {df[df["Condition"] == "Magnitude"]["TonicAnticipatoryGSRAUC"].mean()}')
 
 # # ======================================================================================================================
 # #                                                  Advanced Analysis
@@ -169,12 +171,22 @@ print(f'Magnitude Tonic: {df[df["Condition"] == "Magnitude"]["TonicGSRAUC"].mean
 # #
 # # model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight", condition_of_interest, groups=condition_of_interest["Subnum"]).fit()
 # # print(model.summary())
+
+# model = smf.mixedlm("best_weight ~ PhasicAnticipatoryGSRAUC + I(PhasicAnticipatoryGSRAUC ** 2) * C(Condition)", df, groups=df["Subnum"]).fit()
+# print(model.summary())
 #
-#
-# two-way ANOVA
-model = smf.ols("PhasicAnticipatoryGSRAUC ~ C(BestOption) + C(Condition) + C(BestOption) * C(Condition)",
-                test_CA).fit()
+# #
+# # two-way ANOVA
+# model = smf.ols("PhasicAnticipatoryGSRAUC ~ C(BestOption) + C(Condition) + C(BestOption) * C(Condition)",
+#                 test_CA).fit()
+# print(model.summary())
+# print(sm.stats.anova_lm(model))
+
+model = smf.ols("PhasicAnticipatoryGSRAUC ~ C(BestOption) + C(Condition) + C(Phase)",
+                df).fit()
+print(model.summary())
 print(sm.stats.anova_lm(model))
+
 
 # ======================================================================================================================
 #                                                  Plots
@@ -191,9 +203,10 @@ for trial_type in data_list:
         dodge=True,
         errorbar='se'
     )
-    plt.title(mapping[trial_type['SetSeen.'].iloc[0]])
-    plt.savefig(f'./figures/Anticipatory_interaction_plot_{mapping[trial_type["SetSeen."].iloc[0]]}.png', dpi=600)
+    plt.title(mapping[trial_type['TrialType'].iloc[0]])
+    plt.savefig(f'./figures/Anticipatory_interaction_plot_{mapping[trial_type["TrialType"].iloc[0]]}.png', dpi=600)
     plt.clf()
+
 
 for trial_type in data_list:
     sns.pointplot(
@@ -204,8 +217,8 @@ for trial_type in data_list:
         dodge=True,
         errorbar='se'
     )
-    plt.title(mapping[trial_type['SetSeen.'].iloc[0]])
-    plt.savefig(f'./figures/Outcome_interaction_plot_{mapping[trial_type["SetSeen."].iloc[0]]}.png', dpi=600)
+    plt.title(mapping[trial_type['TrialType'].iloc[0]])
+    plt.savefig(f'./figures/Outcome_interaction_plot_{mapping[trial_type["TrialType"].iloc[0]]}.png', dpi=600)
     plt.clf()
 
 # plot out the anticipatory GSR data by condition

@@ -233,7 +233,21 @@ unit_mapping = {
     'trial_split': trial_split
 }
 # ======================================================================================================================
+# Now, quality check functions
+# ======================================================================================================================
+def calculate_r_squared_reconstruction(original, tonic, phasic):
+    reconstructed = tonic + phasic
+    ss_residual = np.sum((original - reconstructed) ** 2)
+    ss_total = np.sum((original - np.nanmean(original)) ** 2)
+    r_squared = 1 - (ss_residual / ss_total)
+    return r_squared
 
+
+def calculate_snr(signal, noise):
+    signal_power = np.mean(signal ** 2)
+    noise_power = np.mean(noise ** 2)
+    return 10 * np.log10(signal_power / noise_power)
+# ======================================================================================================================
 
 # Rename the columns to include the participant number and trial number
 def rename_columns(df):
@@ -323,7 +337,7 @@ def pairwise_t_test_GSR(df, GSR_type, data_type, trial_type=None):
                 print()
 
         elif data_type == 'testing':
-            data_selected = df[(df['Condition'] == condition) & (df['SetSeen.'] == trial_type)]
+            data_selected = df[(df['Condition'] == condition) & (df['TrialType'] == trial_type)]
             print(ttest_ind(data_selected[data_selected['BestOption'] == 0][GSR_type],
                             data_selected[data_selected['BestOption'] == 1][GSR_type]))
             print('Anticipatory GSR for C:', data_selected[data_selected['BestOption'] == 1][GSR_type].mean())

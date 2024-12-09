@@ -37,8 +37,8 @@ for col in target:
     # Remove rows with any remaining missing values
     filtered_combined_columns = filtered_combined_columns.dropna()
 
-    # # log-transform the data
-    # filtered_combined_columns = np.log(filtered_combined_columns + 1)
+    # log-transform the data
+    filtered_combined_columns = np.log(filtered_combined_columns + 1)
 
     # Calculate the correlation matrix of the filtered combined columns
     correlation = filtered_combined_columns.corr()

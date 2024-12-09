@@ -13,7 +13,7 @@ data = pd.read_csv('./Data/processed_data_experiment_cda.csv')
 # process the data
 data = data.reset_index(drop=True)
 data['KeyResponse'] = data['KeyResponse'] - 1
-data.rename(columns={'SetSeen ': 'SetSeen.'}, inplace=True)
+data.rename(columns={'SetSeen ': 'TrialType'}, inplace=True)
 
 # generate the dictionary
 data_dict = dict_generator(data)
@@ -73,19 +73,18 @@ if __name__ == '__main__':
     data.to_csv('./Data/processed_data_modeled.csv', index=False)
 
     # Now group by trial type and choice to see the difference in anticipatory GSR
-    PhasicAnticipatoryGSRAUC_grouped = data.groupby(['Subnum', 'SetSeen.', 'Condition',  'BestOption'])['PhasicAnticipatoryGSRAUC'].mean().reset_index()
-    PhasicAnticipatoryGSRAUC_grouped = PhasicAnticipatoryGSRAUC_grouped.pivot(index=['Subnum', 'SetSeen.', 'Condition'], columns='BestOption',
+    PhasicAnticipatoryGSRAUC_grouped = data.groupby(['Subnum', 'TrialType', 'Condition',  'BestOption'])['PhasicAnticipatoryGSRAUC'].mean().reset_index()
+    PhasicAnticipatoryGSRAUC_grouped = PhasicAnticipatoryGSRAUC_grouped.pivot(index=['Subnum', 'TrialType', 'Condition'], columns='BestOption',
                                       values='PhasicAnticipatoryGSRAUC').reset_index()
-    PhasicAnticipatoryGSRAUC_grouped.columns = ['Subnum', 'SetSeen.', 'Condition', 'Optimal', 'Suboptimal']
-    CA_AAUC = PhasicAnticipatoryGSRAUC_grouped[PhasicAnticipatoryGSRAUC_grouped['SetSeen.'] == 2]
+    PhasicAnticipatoryGSRAUC_grouped.columns = ['Subnum', 'TrialType', 'Condition', 'Optimal', 'Suboptimal']
+    CA_AAUC = PhasicAnticipatoryGSRAUC_grouped[PhasicAnticipatoryGSRAUC_grouped['TrialType'] == 2]
     CA_AAUC.loc[:, 'GSRdiff'] = CA_AAUC['Suboptimal'] - CA_AAUC['Optimal']
 
-    best_weight_grouped = data.groupby(['Subnum', 'SetSeen.', 'Condition'])['best_weight'].mean().reset_index()
-    best_weight_grouped = best_weight_grouped[best_weight_grouped['SetSeen.'] == 2]
+    best_weight_grouped = data.groupby(['Subnum', 'TrialType', 'Condition'])['best_weight'].mean().reset_index()
+    best_weight_grouped = best_weight_grouped[best_weight_grouped['TrialType'] == 2]
 
-    best_prop = data.groupby(['Subnum', 'SetSeen.', 'Condition'])['BestOption'].mean().reset_index()
-    best_prop = best_prop[best_prop['SetSeen.'] == 2]
-
+    best_prop = data.groupby(['Subnum', 'TrialType', 'Condition'])['BestOption'].mean().reset_index()
+    best_prop = best_prop[best_prop['TrialType'] == 2]
 
 
     results = dual_results.merge(CA_AAUC[['Subnum', 'Condition', 'GSRdiff']], on='Subnum')
@@ -109,8 +108,11 @@ if __name__ == '__main__':
     print(pearsonr(magnitude['GSRdiff'], magnitude['best_weight']))
 
     # predict best option by GSR
-    model = smf.ols('BestOption ~ Condition + GSRdiff * best_weight', data=results).fit()
+    model = smf.ols("PhasicAnticipatoryGSRAUC ~ C(BestOption) + C(Condition) + C(Phase)",
+                    results).fit()
     print(model.summary())
+    print(sm.stats.anova_lm(model))
+
 
 
 

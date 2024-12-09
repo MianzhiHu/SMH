@@ -1,12 +1,18 @@
+import numpy as np
 import pandas as pd
 import ast
 import json
 import neurokit2 as nk
+from sklearn.model_selection import learning_curve
+from sympy.codegen.ast import continue_
+
+from behavioral_analysis import training_accuracy
 from utilities.utility_processGSR import (extract_samples, processGSR, rename_columns, interleave_columns,
                                           difference_transformation, unzip_combined_data, area_under_curve,
                                           check_best_option, cda_pipeline, combined_cda_pipeline, difference_pipeline,
                                           auto_pipeline, neurokit_pipeline, method_pipeline, find_peak, trialwise,
-                                          trial_split, unit_mapping)
+                                          trial_split, unit_mapping, calculate_r_squared_reconstruction, calculate_snr)
+from scipy.signal import correlate
 from utilities.pyEDA.main import *
 import pyphysio as ph
 from utils.dfa import *
@@ -36,8 +42,9 @@ amplitude_threshold = 0.01  # amplitude threshold to detect SCR
 iterations = 0
 max_gsr_samples = 800
 max_trial_samples = 250 * 2
+learning_threshold = 0.55
 ts_option = 'experiment'  # choose from 'experiment', 'trial', or 'trial_split'
-method = 'combined'  # choose from 'auto', 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'SparsEDA', 'difference', or 'combined'
+method = 'cvxeda'  # choose from 'auto', 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'SparsEDA', 'difference', or 'combined'
 
 # Initialize a list to store all data
 all_data = []
@@ -276,13 +283,75 @@ else:
     tonic_out_gsr.columns = ts_out_gsr_renamed.columns
 
 print('=========================================================================================================')
-print('GSR data has been successfully processed.')
+print('GSR data has been successfully processed. Now quality checking...')
 print('=========================================================================================================')
 
-# # save the data
-# phasic_ant_gsr.to_csv(f'./Data/TEST_phasic_ant_gsr_{method}.csv', index=False)
-# phasic_out_gsr.to_csv(f'./Data/TEST_phasic_out_gsr_{method}.csv', index=False)
+# ======================================================================================================================
+# Quality check
+# ======================================================================================================================
+# Check the quality of the reconstruction
+r_squared_ant = []
+r_squared_out = []
 
+for i in range(phasic_ant_gsr.shape[1]):
+    original = cleaned_ant_gsr.iloc[:, i]
+    tonic = tonic_ant_gsr.iloc[:, i]
+    phasic = phasic_ant_gsr.iloc[:, i]
+    r_squared_ant.append(calculate_r_squared_reconstruction(original, tonic, phasic))
+
+    original = cleaned_out_gsr.iloc[:, i]
+    tonic = tonic_out_gsr.iloc[:, i]
+    phasic = phasic_out_gsr.iloc[:, i]
+    r_squared_out.append(calculate_r_squared_reconstruction(original, tonic, phasic))
+
+for r_squared_list, name in zip([r_squared_ant, r_squared_out], ['anticipatory', 'outcome']):
+    print(f'[{method}] By reconstructing the phasic and tonic components in the {name} GSR data, '
+            f'the mean R-squared value is {np.nanmean(r_squared_list):.2f} '
+          f'with a standard deviation of {np.nanstd(r_squared_list):.2f}.')
+    print(f'[{method}] The percentage of data with R-squared value between 0 and 1 is '
+            f'{len([r for r in r_squared_list if 0 < r < 1]) / len(r_squared_list) * 100:.2f}%; and '
+            f'{len([r for r in r_squared_list if 0.85 < r < 1]) / len(r_squared_list) * 100:.2f}% are above 0.85.')
+    print(f'[{method}] The minimum R-squared value is {min(r_squared_list):.2f} '
+          f'and the maximum R-squared value is {max(r_squared_list):.2f}.')
+    print()
+
+print(f'=========================================================================================================')
+
+# Calculate the signal-to-noise ratio for the phasic and tonic components
+snr_ant_tonic = []
+snr_ant_phasic = []
+snr_out_tonic = []
+snr_out_phasic = []
+
+for i in range(phasic_ant_gsr.shape[1]):
+    tonic_ant_noise = cleaned_ant_gsr.iloc[:, i] - tonic_ant_gsr.iloc[:, i]
+    phasic_ant_noise = cleaned_ant_gsr.iloc[:, i] - phasic_ant_gsr.iloc[:, i]
+    tonic_out_noise = cleaned_out_gsr.iloc[:, i] - tonic_out_gsr.iloc[:, i]
+    phasic_out_noise = cleaned_out_gsr.iloc[:, i] - phasic_out_gsr.iloc[:, i]
+
+    snr_ant_tonic.append(calculate_snr(tonic_ant_gsr.iloc[:, i], tonic_ant_noise))
+    snr_ant_phasic.append(calculate_snr(phasic_ant_gsr.iloc[:, i], phasic_ant_noise))
+    snr_out_tonic.append(calculate_snr(tonic_out_gsr.iloc[:, i], tonic_out_noise))
+    snr_out_phasic.append(calculate_snr(phasic_out_gsr.iloc[:, i], phasic_out_noise))
+
+for snr_list, name in zip([snr_ant_tonic, snr_ant_phasic, snr_out_tonic, snr_out_phasic],
+                            ['anticipatory tonic', 'anticipatory phasic', 'outcome tonic', 'outcome phasic']):
+    print(f'[{method}] The mean signal-to-noise ratio for the {name} component is {np.nanmean(snr_list):.2f} dB '
+            f'with a standard deviation of {np.nanstd(snr_list):.2f} dB.')
+    print(f'[{method}] The minimum signal-to-noise ratio is {min(snr_list):.2f} dB '
+            f'and the maximum signal-to-noise ratio is {max(snr_list):.2f} dB.')
+    print(f'[{method}] The percentage of data with signal-to-noise ratio above 5 dB is '
+            f'{len([snr for snr in snr_list if snr > 5]) / len(snr_list) * 100:.2f}%.')
+    print(f'[{method}] The percentage of data with signal-to-noise ratio above 10 dB is '
+            f'{len([snr for snr in snr_list if snr > 10]) / len(snr_list) * 100:.2f}%.')
+    print(f'[{method}] The percentage of data with signal-to-noise ratio above 15 dB is '
+            f'{len([snr for snr in snr_list if snr > 15]) / len(snr_list) * 100:.2f}%.')
+    print(f'[{method}] The percentage of data with signal-to-noise ratio above 20 dB is '
+            f'{len([snr for snr in snr_list if snr > 20]) / len(snr_list) * 100:.2f}%.')
+    print()
+print(f'=========================================================================================================')
+
+# ======================================================================================================================
 # Calculate the area under the curve for each GSR data
 df['AnticipatoryGSRAUC'] = area_under_curve(cleaned_ant_gsr)
 df['OutcomeGSRAUC'] = area_under_curve(cleaned_out_gsr)
@@ -382,10 +451,20 @@ else:
 df.drop(columns=['AnticipatoryGSR', 'OutcomeGSR'], inplace=True)
 
 # rename the columns
-df.rename(columns={'SetSeen ': 'SetSeen.'}, inplace=True)
+df.rename(columns={'SetSeen ': 'TrialType'}, inplace=True)
 
 # save the data
 df.to_csv(f'./Data/processed_data_{ts_option}_{method}.csv', index=False)
+
+# save good learner data separately
+training_data = df[df['Phase'] != 'Test']
+training_accuracy = training_data.groupby(['Subnum'])['BestOption'].mean().reset_index()
+good_learner_id = training_accuracy[training_accuracy['BestOption'] >= learning_threshold]['Subnum']
+good_learner_data = df[df['Subnum'].isin(good_learner_id)]
+np.save(f'./Data/good_learner_id.npy', good_learner_id.to_numpy())
+good_learner_data.to_csv(f'./Data/good_learner_data_{ts_option}_{method}.csv', index=False)
+print(f'There are {len(training_accuracy[training_accuracy["BestOption"] < learning_threshold])} bad learners. '
+      f'{len(training_accuracy[training_accuracy["BestOption"] >= learning_threshold])} good learners are retained.')
 
 print('=========================================================================================================')
 print('Done! Preprocessed data has been saved!')
