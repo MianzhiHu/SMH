@@ -8,15 +8,16 @@ import statsmodels.formula.api as smf
 import statsmodels.api as sm
 
 # load processed data
-data = pd.read_csv('./Data/processed_data_experiment_cda.csv')
+data = pd.read_csv('./Data/good_learner_data_experiment_cvxeda.csv')
 
 # process the data
 data = data.reset_index(drop=True)
 data['KeyResponse'] = data['KeyResponse'] - 1
-data.rename(columns={'SetSeen ': 'TrialType'}, inplace=True)
+data_copy = data.copy()
+data_copy.rename(columns={'TrialType': 'SetSeen.'}, inplace=True)
 
 # generate the dictionary
-data_dict = dict_generator(data)
+data_dict = dict_generator(data_copy)
 
 # initialize the computational models
 model_dual = DualProcessModel()
@@ -94,8 +95,10 @@ if __name__ == '__main__':
 
     results['best_weight'] = pd.to_numeric(results['best_weight'], errors='coerce')
 
+
     # pearson r
     print(pearsonr(results['GSRdiff'], results['best_weight']))
+    print(pearsonr(data['PhasicAnticipatoryGSRAUC'], data['best_weight']))
 
     # separate by condition
     baseline = results[results['Condition'] == 'Baseline']
@@ -106,14 +109,6 @@ if __name__ == '__main__':
     print(pearsonr(baseline['GSRdiff'], baseline['best_weight']))
     print(pearsonr(frequency['GSRdiff'], frequency['best_weight']))
     print(pearsonr(magnitude['GSRdiff'], magnitude['best_weight']))
-
-    # predict best option by GSR
-    model = smf.ols("PhasicAnticipatoryGSRAUC ~ C(BestOption) + C(Condition) + C(Phase)",
-                    results).fit()
-    print(model.summary())
-    print(sm.stats.anova_lm(model))
-
-
 
 
 

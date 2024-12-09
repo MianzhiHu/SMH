@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from brainsmash.mapgen.stats import pearsonr
 from scipy.stats import ttest_ind
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -8,10 +9,10 @@ from utilities.utility_processGSR import processGSR, area_under_curve, pairwise_
 from utilities.utility_plotting import plot_trial, plot_overall, plot_by_phase
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
-from statsmodels.graphics.factorplots import interaction_plot
+from scipy.stats import pearsonr
 
 # load processed data
-# path = './Data/processed_data_modeled.csv'
+path = './Data/processed_data_modeled.csv'
 
 # path = './Data/processed_data_auto.csv'
 # path = './Data/processed_data_trial_auto.csv'
@@ -21,7 +22,7 @@ from statsmodels.graphics.factorplots import interaction_plot
 # path = './Data/processed_data_trial_smoothmedian.csv'
 # path = './Data/processed_data_experiment_cvxeda.csv'
 # path = './Data/processed_data_trial_cvxeda.csv'
-path = './Data/good_learner_data_experiment_cvxeda.csv'
+# path = './Data/good_learner_data_experiment_cvxeda.csv'
 # path = './Data/processed_data_experiment_cda.csv'
 # path = './Data/processed_data_trial_cda.csv'
 # path = './Data/processed_data_combined.csv'
@@ -166,11 +167,11 @@ print(f'Magnitude Tonic: {df[df["Condition"] == "Magnitude"]["TonicAnticipatoryG
 # model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ C(Condition)", df, groups=df["Subnum"]).fit()
 # print(model.summary())
 #
-# # model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight * Condition", df, groups=df["Subnum"]).fit()
-# # print(model.summary())
-# #
-# # model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight", condition_of_interest, groups=condition_of_interest["Subnum"]).fit()
-# # print(model.summary())
+# model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight + Condition", df, groups=df["Subnum"]).fit()
+# print(model.summary())
+
+# model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight", condition_of_interest, groups=condition_of_interest["Subnum"]).fit()
+# print(model.summary())
 
 # model = smf.mixedlm("best_weight ~ PhasicAnticipatoryGSRAUC + I(PhasicAnticipatoryGSRAUC ** 2) * C(Condition)", df, groups=df["Subnum"]).fit()
 # print(model.summary())
