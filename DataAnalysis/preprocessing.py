@@ -5,8 +5,6 @@ import json
 import neurokit2 as nk
 from sklearn.model_selection import learning_curve
 from sympy.codegen.ast import continue_
-
-from behavioral_analysis import training_accuracy
 from utilities.utility_processGSR import (extract_samples, processGSR, rename_columns, interleave_columns,
                                           difference_transformation, unzip_combined_data, area_under_curve,
                                           check_best_option, cda_pipeline, combined_cda_pipeline, difference_pipeline,

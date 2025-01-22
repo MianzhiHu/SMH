@@ -94,7 +94,9 @@ if __name__ == '__main__':
     results = results.dropna()
 
     results['best_weight'] = pd.to_numeric(results['best_weight'], errors='coerce')
-
+    data['PhasicAnticipatoryGSRAUC'] = pd.to_numeric(data['PhasicAnticipatoryGSRAUC'], errors='coerce')
+    data['best_weight'] = pd.to_numeric(data['best_weight'], errors='coerce')
+    data['dist'] = pd.to_numeric(data['dist'], errors='coerce')
 
     # pearson r
     print(pearsonr(results['GSRdiff'], results['best_weight']))
@@ -104,15 +106,44 @@ if __name__ == '__main__':
     baseline = results[results['Condition'] == 'Baseline']
     frequency = results[results['Condition'] == 'Frequency']
     magnitude = results[results['Condition'] == 'Magnitude']
+    baseline_data = data[data['Condition'] == 'Baseline']
+    frequency_data = data[data['Condition'] == 'Frequency']
+    magnitude_data = data[data['Condition'] == 'Magnitude']
 
     # t-test
     print(pearsonr(baseline['GSRdiff'], baseline['best_weight']))
     print(pearsonr(frequency['GSRdiff'], frequency['best_weight']))
     print(pearsonr(magnitude['GSRdiff'], magnitude['best_weight']))
+    print(pearsonr(baseline_data['PhasicAnticipatoryGSRAUC'], baseline_data['dist']))
+    print(pearsonr(frequency_data['PhasicAnticipatoryGSRAUC'], frequency_data['dist']))
+    print(pearsonr(magnitude_data['PhasicAnticipatoryGSRAUC'], magnitude_data['dist']))
+
+    # mixed effects model
+    mixed_model = smf.mixedlm('PhasicAnticipatoryGSRAUC ~ dist', data=frequency_data, groups=frequency_data['Subnum']).fit()
+    print(mixed_model.summary())
+
+    # simulation
+    val_magnitude = [1.95, 1.05, 2.25, 0.75]
+    var_mag = [1.29, 2.58, 2.58, 1.29]
+    var_baseline = [1.29, 1.29, 1.29, 1.29]
+    dual_baseline = model_dual.simulate(val_magnitude, var_baseline, model="Entropy_Dis_ID", AB_freq=75, CD_freq=75, num_iterations=1000, weight_Gau='softmax',
+                                     weight_Dir='softmax', arbi_option='Entropy', Dir_fun='Linear_Recency',
+                                     Gau_fun='Naive_Recency')
 
 
 
+    def proportion_chosen(x):
+        return (x == 'C').sum() / len(x)
 
+    dual_results = dual_simulation[dual_simulation['pair'] == ('C', 'A')].groupby('simulation_num').agg(
+        choice=('choice', proportion_chosen),
+        t=('t', 'mean'),
+        a=('a', 'mean'),
+        param_weight=('param_weight', 'mean'),
+        obj_weight=('obj_weight', 'mean'),
+        weight_dir=('weight_Dir', 'mean'),
+    ).reset_index()
 
+    print(dual_results['choice'].mean())
 
 

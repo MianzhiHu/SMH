@@ -157,17 +157,17 @@ print(f'Magnitude Tonic: {df[df["Condition"] == "Magnitude"]["TonicAnticipatoryG
 # model = smf.mixedlm("PhasicOutcomeGSRAUC ~ BestOption + Condition", training_data, groups=training_data["Subnum"]).fit()
 # print(model.summary())
 #
-# # model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight + BestOption", magnitude_testing, groups=magnitude_testing["Subnum"]).fit()
-# # print(model.summary())
+# model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight + BestOption", magnitude_testing, groups=magnitude_testing["Subnum"]).fit()
+# print(model.summary())
 #
-# # model = smf.mixedlm("best_weight ~ C(Condition)", df, groups=df["Subnum"]).fit()
-# # print(model.summary())
-#
+# model = smf.mixedlm("best_weight ~ C(Condition)", df, groups=df["Subnum"]).fit()
+# print(model.summary())
+
 #
 # model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ C(Condition)", df, groups=df["Subnum"]).fit()
 # print(model.summary())
 #
-# model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight + Condition", df, groups=df["Subnum"]).fit()
+# model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight * Condition", df, groups=df["Subnum"]).fit()
 # print(model.summary())
 
 # model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ best_weight", condition_of_interest, groups=condition_of_interest["Subnum"]).fit()
