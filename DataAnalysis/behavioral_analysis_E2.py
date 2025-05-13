@@ -9,10 +9,10 @@ from utilities.utility_processGSR import processGSR, area_under_curve
 
 
 # load processed data
-df = pd.read_csv('./Data/processed_data_experiment_cvxeda.csv')
+df = pd.read_csv('./Data/E2/Preprocessed/processed_data_experiment_cvxeda_E2.csv')
 # df = pd.read_csv('./Data/good_learner_data_experiment_cvxeda.csv')
 # df = pd.read_csv('./Data/processed_data_modeled.csv')
-df['Condition'] = pd.Categorical(df['Condition'], categories=['Baseline', 'Frequency', 'Magnitude'], ordered=True)
+df['Condition'] = pd.Categorical(df['Condition'], categories=['NoHighStake', 'HighStake'], ordered=True)
 
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']
@@ -24,47 +24,63 @@ print(training_data.groupby(['Condition', 'KeyResponse'])['Reward'].mean())
 print(training_data.groupby(['Condition', 'KeyResponse'])['Reward'].std())
 
 # one sample t-tests
-reward_ratio = 2.25 / (2.25 + 1.95)
-print(f'[Baseline] Random Chance: {ttest_1samp(CA_data[CA_data['Condition'] == 'Baseline'].groupby('Subnum')['BestOption'].mean(), 0.50)}')
-print(f'[Baseline] Reward Ratio: {ttest_1samp(CA_data[CA_data['Condition'] == 'Baseline'].groupby('Subnum')['BestOption'].mean(), reward_ratio)}')
-print(f'[Frequency] Random Chance: {ttest_1samp(CA_data[CA_data['Condition'] == 'Frequency'].groupby('Subnum')['BestOption'].mean(), 0.50)}')
-print(f'[Frequency] Reward Ratio: {ttest_1samp(CA_data[CA_data['Condition'] == 'Frequency'].groupby('Subnum')['BestOption'].mean(), reward_ratio)}')
-print(f'[Magnitude] Random Chance: {ttest_1samp(CA_data[CA_data['Condition'] == 'Magnitude'].groupby('Subnum')['BestOption'].mean(), 0.50)}')
-print(f'[Magnitude] Reward Ratio: {ttest_1samp(CA_data[CA_data['Condition'] == 'Magnitude'].groupby('Subnum')['BestOption'].mean(), reward_ratio)}')
-print(CA_data[CA_data['Condition'] == 'Baseline'].groupby('Subnum')['BestOption'].mean().mean())
-
+reward_ratio = 0.75 / (0.75 + 0.65)
+reward_ratio_hs = 1.29 / (1.29 + 1.18)
+print(f'[NoHighStake] Random Chance: {ttest_1samp(CA_data[CA_data['Condition'] == 'NoHighStake'].groupby('Subnum')['BestOption'].mean(), 0.50)}')
+print(f'[NoHighStake] Reward Ratio: {ttest_1samp(CA_data[CA_data['Condition'] == 'NoHighStake'].groupby('Subnum')['BestOption'].mean(), reward_ratio)}')
+print(f'[HighStake] Random Chance: {ttest_1samp(CA_data[CA_data['Condition'] == 'HighStake'].groupby('Subnum')['BestOption'].mean(), 0.50)}')
+print(f'[HighStake] Reward Ratio: {ttest_1samp(CA_data[CA_data['Condition'] == 'HighStake'].groupby('Subnum')['BestOption'].mean(), reward_ratio)}')
+print(CA_data[CA_data['Condition'] == 'NoHighStake'].groupby('Subnum')['BestOption'].mean().mean())
 
 # calculate the percentage of selecting the best option
-prop_optimal = df.groupby(['Subnum', 'Condition', 'TrialType'])['BestOption'].mean().reset_index()
+prop_optimal = df.groupby(['Subnum', 'Condition', 'TrialType', 'HighStakes'])['BestOption'].mean().reset_index()
+
+# calculate average payoff per trial type
+trial_reward = df.groupby(['Condition', 'KeyResponse'],
+                          observed=False)['Reward'].mean().reset_index().dropna()
 
 # plot the percentage of selecting the best option
 x_labels = ['AB', 'CD', 'CA', 'CB', 'AD', 'BD']
 
 # set the order of the conditions
-prop_optimal['Condition'] = pd.Categorical(prop_optimal['Condition'], categories=['Baseline', 'Frequency', 'Magnitude'], ordered=True)
-prop_optimal['Condition'] = prop_optimal['Condition'].cat.rename_categories({
-    'Magnitude': 'Variance'
-})
+prop_optimal['Condition'] = pd.Categorical(prop_optimal['Condition'], categories=['NoHighStake', 'HighStake'], ordered=True)
 
 plt.figure(figsize=(10, 8))
 sns.barplot(data=prop_optimal, x='TrialType', y='BestOption', hue='Condition', errorbar='se',
-            palette=sns.color_palette('deep')[0:3])
+            palette=sns.color_palette('deep')[0:2])
 plt.xticks(np.arange(6), x_labels, fontsize=15)
 plt.yticks(fontsize=15)
 plt.xlabel('Trial Type', fontsize=20)
 plt.ylabel('Proportion of Selecting the Best Option', fontsize=20)
-plt.legend(title='Condition', loc='upper left', fontsize=15, title_fontsize=15)
+plt.legend(title='Trial Stakes', loc='upper left', fontsize=15, title_fontsize=15)
 plt.axhline(0.5, color='black', linestyle='--')
 sns.despine()
 plt.tight_layout()
-plt.savefig('./figures/pre_behavioral.png', dpi=600)
+plt.savefig('./figures/pre_behavioral_E2.png', dpi=600)
+plt.show()
+
+# High Stake only
+prop_optimal_hs = prop_optimal[prop_optimal['Condition'] == 'HighStake']
+prop_optimal_hs['HighStakes'] = pd.Categorical(prop_optimal_hs['HighStakes'], categories=[False, True],
+                                       ordered=True).rename_categories(
+    {False: 'Low Stake Trials', True: 'High Stake Trials'})
+plt.figure(figsize=(10, 8))
+sns.barplot(data=prop_optimal_hs, x='TrialType', y='BestOption', hue='HighStakes', errorbar='se',
+            palette=sns.color_palette('deep')[0:2])
+plt.xticks(np.arange(6), x_labels, fontsize=15)
+plt.yticks(fontsize=15)
+plt.xlabel('Trial Type', fontsize=20)
+plt.ylabel('Proportion of Selecting the Best Option', fontsize=20)
+plt.legend(title='Trial Stakes', loc='upper left', fontsize=15, title_fontsize=15)
+plt.axhline(0.5, color='black', linestyle='--')
+sns.despine()
+plt.tight_layout()
+plt.savefig('./figures/pre_behavioral_HS_E2.png', dpi=600)
 plt.show()
 
 # CA only
 CA_summary = CA_data.groupby(['Subnum', 'Condition'])['BestOption'].mean().reset_index()
 CA_summary['Condition'] = pd.Categorical(CA_summary['Condition'], categories=['Baseline', 'Frequency', 'Magnitude'], ordered=True)
-CA_summary['Condition'] = CA_summary['Condition'].cat.rename_categories({
-    'Magnitude': 'Variance'})
 plt.figure(figsize=(10, 8))
 sns.barplot(data=CA_summary, x='Condition', y='BestOption', hue='Condition', errorbar='se',
             palette=sns.color_palette('deep')[0:3])

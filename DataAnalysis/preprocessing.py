@@ -9,7 +9,8 @@ from utilities.utility_processGSR import (extract_samples, processGSR, rename_co
                                           difference_transformation, unzip_combined_data, area_under_curve,
                                           check_best_option, cda_pipeline, combined_cda_pipeline, difference_pipeline,
                                           auto_pipeline, neurokit_pipeline, method_pipeline, find_peak, trialwise,
-                                          trial_split, unit_mapping, calculate_r_squared_reconstruction, calculate_snr)
+                                          trial_split, unit_mapping, calculate_r_squared_reconstruction, calculate_snr,
+                                          signed_log_transform)
 from scipy.signal import correlate
 from utilities.pyEDA.main import *
 import pyphysio as ph
@@ -30,7 +31,10 @@ from pyphysio.specialized.eda import DriverEstim, PhasicEstim
 # data = pd.DataFrame(data)
 
 # Specify the folder containing the .txt files
-directory_path = './Data'
+directory_path = './Data/E2'
+
+# Extract experiment ID from path
+ex_id = directory_path.split('/')[-1]
 # directory_path = './Data/Test Data'
 
 # Define parameters for the GSR data processing
@@ -43,6 +47,7 @@ max_trial_samples = 250 * 2
 learning_threshold = 0.55
 ts_option = 'experiment'  # choose from 'experiment', 'trial', or 'trial_split'
 method = 'cvxeda'  # choose from 'auto', 'highpass', 'smoothmedian', 'cvxeda', 'cda', 'SparsEDA', 'difference', or 'combined'
+z_score = False
 
 # Initialize a list to store all data
 all_data = []
@@ -79,6 +84,10 @@ demo_list = ['Gender', 'Ethnicity', 'Race', 'Age']
 
 kept_columns = (['Condition'] + ['studyResultId'] + behavioral_list + GSR_list +
                 personality_list + demo_list)
+
+if ex_id == 'E2':
+    # add the high stakes column
+    behavioral_list += ['HighStakes']
 
 # keep only the necessary columns
 data = data[kept_columns]
@@ -359,9 +368,23 @@ df['PhasicAnticipatoryGSRPeak'] = find_peak(phasic_ant_gsr)
 df['TonicOutcomeGSRAUC'] = area_under_curve(tonic_out_gsr)
 df['PhasicOutcomeGSRAUC'] = area_under_curve(phasic_out_gsr)
 df['PhasicOutcomeGSRPeak'] = find_peak(phasic_out_gsr)
+
+# log-transform the GSR data to remove skewness
+auc_columns = ['AnticipatoryGSRAUC', 'OutcomeGSRAUC', 'TonicAnticipatoryGSRAUC', 'PhasicAnticipatoryGSRAUC',
+               'TonicOutcomeGSRAUC', 'PhasicOutcomeGSRAUC']
+df[auc_columns] = df[auc_columns].apply(lambda x: signed_log_transform(x))
+
+# calculate additional GSR features
 df['GSRAUC'] = df['AnticipatoryGSRAUC'] + df['OutcomeGSRAUC']
 df['TonicGSRAUC'] = df['TonicAnticipatoryGSRAUC'] + df['TonicOutcomeGSRAUC']
 df['PhasicGSRAUC'] = df['PhasicAnticipatoryGSRAUC'] + df['PhasicOutcomeGSRAUC']
+
+# take the z-score of the GSR data withing each participant
+if z_score is True:
+    all_auc_columns = ['AnticipatoryGSRAUC', 'OutcomeGSRAUC', 'TonicAnticipatoryGSRAUC', 'PhasicAnticipatoryGSRAUC',
+                       'TonicOutcomeGSRAUC', 'PhasicOutcomeGSRAUC', 'GSRAUC', 'TonicGSRAUC', 'PhasicGSRAUC']
+    for auc_column in all_auc_columns:
+        df[auc_column] = df.groupby('studyResultId')[auc_column].transform(lambda x: (x - x.mean()) / x.std())
 
 # # Calculate Hurst exponent
 # hurst = []
@@ -452,15 +475,15 @@ df.drop(columns=['AnticipatoryGSR', 'OutcomeGSR'], inplace=True)
 df.rename(columns={'SetSeen ': 'TrialType'}, inplace=True)
 
 # save the data
-df.to_csv(f'./Data/processed_data_{ts_option}_{method}.csv', index=False)
+df.to_csv(f'./Data/{ex_id}/Preprocessed/processed_data_{ts_option}_{method}_{ex_id}.csv', index=False)
 
 # save good learner data separately
 training_data = df[df['Phase'] != 'Test']
 training_accuracy = training_data.groupby(['Subnum'])['BestOption'].mean().reset_index()
 good_learner_id = training_accuracy[training_accuracy['BestOption'] >= learning_threshold]['Subnum']
 good_learner_data = df[df['Subnum'].isin(good_learner_id)]
-np.save(f'./Data/good_learner_id.npy', good_learner_id.to_numpy())
-good_learner_data.to_csv(f'./Data/good_learner_data_{ts_option}_{method}.csv', index=False)
+np.save(f'./Data/{ex_id}/Preprocessed/good_learner_id_{ex_id}.npy', good_learner_id.to_numpy())
+good_learner_data.to_csv(f'./Data/{ex_id}/Preprocessed/good_learner_data_{ts_option}_{method}_{ex_id}.csv', index=False)
 print(f'There are {len(training_accuracy[training_accuracy["BestOption"] < learning_threshold])} bad learners. '
       f'{len(training_accuracy[training_accuracy["BestOption"] >= learning_threshold])} good learners are retained.')
 

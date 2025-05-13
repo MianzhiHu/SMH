@@ -1,14 +1,19 @@
+import ast
+import os
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from sympy.benchmarks.bench_meijerint import alpha
+
 from utils.ComputationalModeling import ComputationalModels, dict_generator, parameter_extractor, trial_exploder
 from utils.DualProcess import DualProcessModel
 from scipy.stats import pearsonr, spearmanr, ttest_ind
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # load processed data
-data = pd.read_csv('./Data/good_learner_data_experiment_cvxeda.csv')
+data = pd.read_csv('./Data/processed_data_experiment_cvxeda.csv')
 
 # process the data
 data = data.reset_index(drop=True)
@@ -27,13 +32,13 @@ model_decay = ComputationalModels('decay')
 if __name__ == '__main__':
     # # fit the models
     # dual_results = model_dual.fit(data_dict, 'Entropy_Dis_ID', Gau_fun='Naive_Recency', Dir_fun='Linear_Recency',
-    #                               weight_Dir='softmax', weight_Gau='softmax', num_iterations=200)
+    #                               weight_Dir='softmax', weight_Gau='softmax', num_iterations=100, a_min=1e-32)
     # dual_results.to_csv('./models/dual_results.csv', index=False)
-
-    # delta_results = model_delta.fit(data_dict, num_iterations=200)
+    #
+    # delta_results = model_delta.fit(data_dict, num_iterations=100)
     # delta_results.to_csv('./models/delta_results.csv', index=False)
     #
-    # decay_results = model_decay.fit(data_dict, num_iterations=200)
+    # decay_results = model_decay.fit(data_dict, num_iterations=100)
     # decay_results.to_csv('./models/decay_results.csv', index=False)
 
     dual_results = pd.read_csv('./models/dual_results.csv')
@@ -60,6 +65,14 @@ if __name__ == '__main__':
     # extract the weights
     data['best_weight'] = trial_exploder(dual_results, 'best_weight')
     data['best_obj_weight'] = trial_exploder(dual_results, 'best_obj_weight')
+    data['best_gau_entropy'] = trial_exploder(dual_results, 'best_gau_entropy')
+    data['best_dir_entropy'] = trial_exploder(dual_results, 'best_dir_entropy')
+    data['prob_best'] = trial_exploder(dual_results, 'best_prob_choice')
+
+    # if BestOption is 1, then set "Prob Best' to prob choice, else set it to 1 - prob choice
+    data['prob_choice'] = np.where(data['BestOption'] == 1, data['prob_best'], 1 - data['prob_best'])
+    data['pred_choice'] = np.where(data['prob_best'] > 0.5, 1, 0)
+    data['mismatch'] = np.where(data['pred_choice'] != data['BestOption'], 1, 0)
 
     # clean up the columns
     col_to_keep = ['participant_id', 'AIC', 'BIC', 't', 'alpha', 'subj_weight']
@@ -68,7 +81,7 @@ if __name__ == '__main__':
 
     # merge the data
     data = data.merge(dual_results, on='Subnum')
-    data['dist'] = abs(data['best_weight'] - 0.5)
+    data['dist'] = abs(data['prob_choice'] - 0.5)
 
     # save the data
     data.to_csv('./Data/processed_data_modeled.csv', index=False)
@@ -92,15 +105,18 @@ if __name__ == '__main__':
     results = results.merge(best_weight_grouped [['Subnum', 'best_weight']], on='Subnum')
     results = results.merge(best_prop[['Subnum', 'BestOption']], on='Subnum')
     results = results.dropna()
-
     results['best_weight'] = pd.to_numeric(results['best_weight'], errors='coerce')
-    data['PhasicAnticipatoryGSRAUC'] = pd.to_numeric(data['PhasicAnticipatoryGSRAUC'], errors='coerce')
-    data['best_weight'] = pd.to_numeric(data['best_weight'], errors='coerce')
-    data['dist'] = pd.to_numeric(data['dist'], errors='coerce')
+
+    numeric_col = ['PhasicAnticipatoryGSRAUC', 'best_gau_entropy', 'best_dir_entropy', 'best_weight', 'best_obj_weight',
+                   'dist', 'subj_weight', 'alpha', 't']
+
+    for col in numeric_col:
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+
 
     # pearson r
     print(pearsonr(results['GSRdiff'], results['best_weight']))
-    print(pearsonr(data['PhasicAnticipatoryGSRAUC'], data['best_weight']))
+    print(pearsonr(data['PhasicAnticipatoryGSRAUC'], data['best_gau_entropy']))
 
     # separate by condition
     baseline = results[results['Condition'] == 'Baseline']
@@ -119,31 +135,102 @@ if __name__ == '__main__':
     print(pearsonr(magnitude_data['PhasicAnticipatoryGSRAUC'], magnitude_data['dist']))
 
     # mixed effects model
-    mixed_model = smf.mixedlm('PhasicAnticipatoryGSRAUC ~ dist', data=frequency_data, groups=frequency_data['Subnum']).fit()
+    mixed_model = smf.mixedlm('PhasicAnticipatoryGSRAUC ~ best_gau_entropy + C(Condition)', data=data, groups=data['Subnum']).fit()
     print(mixed_model.summary())
 
-    # simulation
-    val_magnitude = [1.95, 1.05, 2.25, 0.75]
+    # ==================================================================================================================
+    # Simulate the model
+    # ==================================================================================================================
+    val = [1.95, 1.05, 2.25, 0.75]
     var_mag = [1.29, 2.58, 2.58, 1.29]
     var_baseline = [1.29, 1.29, 1.29, 1.29]
-    dual_baseline = model_dual.simulate(val_magnitude, var_baseline, model="Entropy_Dis_ID", AB_freq=75, CD_freq=75, num_iterations=1000, weight_Gau='softmax',
-                                     weight_Dir='softmax', arbi_option='Entropy', Dir_fun='Linear_Recency',
-                                     Gau_fun='Naive_Recency')
+    n_iterations = 10000
 
+    # # simulate the data
+    # dual_baseline = model_dual.simulate(val, var_baseline, model="Entropy_Dis_ID", AB_freq=75, CD_freq=75,
+    #                                     num_iterations=n_iterations, weight_Gau='softmax', weight_Dir='softmax',
+    #                                     arbi_option='Entropy', Dir_fun='Linear_Recency', Gau_fun='Naive_Recency', a_min=1e-32)
+    # dual_frequency = model_dual.simulate(val, var_baseline, model="Entropy_Dis_ID", AB_freq=100, CD_freq=50,
+    #                                      num_iterations=n_iterations, weight_Gau='softmax', weight_Dir='softmax',
+    #                                      arbi_option='Entropy', Dir_fun='Linear_Recency', Gau_fun='Naive_Recency', a_min=1e-32)
+    # dual_magnitude = model_dual.simulate(val, var_mag, model="Entropy_Dis_ID", AB_freq=75, CD_freq=75,
+    #                                      num_iterations=n_iterations, weight_Gau='softmax', weight_Dir='softmax',
+    #                                      arbi_option='Entropy', Dir_fun='Linear_Recency', Gau_fun='Naive_Recency', a_min=1e-32)
+    #
+    # dual_baseline.to_csv('./Data/Model/Simulations/dual_baseline.csv', index=False)
+    # dual_frequency.to_csv('./Data/Model/Simulations/dual_frequency.csv', index=False)
+    # dual_magnitude.to_csv('./Data/Model/Simulations/dual_magnitude.csv', index=False)
 
+    # # simulate for the delta model
+    # delta_baseline = model_delta.simulate(val, var_baseline, AB_freq=75, CD_freq=75, num_iterations=n_iterations)
+    # delta_frequency = model_delta.simulate(val, var_baseline, AB_freq=100, CD_freq=50, num_iterations=n_iterations)
+    # delta_magnitude = model_delta.simulate(val, var_mag, AB_freq=75, CD_freq=75, num_iterations=n_iterations)
+    #
+    # delta_baseline.to_csv('./Data/Model/Simulations/delta_baseline.csv', index=False)
+    # delta_frequency.to_csv('./Data/Model/Simulations/delta_frequency.csv', index=False)
+    # delta_magnitude.to_csv('./Data/Model/Simulations/delta_magnitude.csv', index=False)
+    #
+    # # simulate for the decay model
+    # decay_baseline = model_decay.simulate(val, var_baseline, AB_freq=75, CD_freq=75, num_iterations=n_iterations)
+    # decay_frequency = model_decay.simulate(val, var_baseline, AB_freq=100, CD_freq=50, num_iterations=n_iterations)
+    # decay_magnitude = model_decay.simulate(val, var_mag, AB_freq=75, CD_freq=75, num_iterations=n_iterations)
+    #
+    # decay_baseline.to_csv('./Data/Model/Simulations/decay_baseline.csv', index=False)
+    # decay_frequency.to_csv('./Data/Model/Simulations/decay_frequency.csv', index=False)
+    # decay_magnitude.to_csv('./Data/Model/Simulations/decay_magnitude.csv', index=False)
 
-    def proportion_chosen(x):
-        return (x == 'C').sum() / len(x)
+    # ------------------------------------------------------------------------------------------------------------------
+    # Read the simulated data
+    # ------------------------------------------------------------------------------------------------------------------
+    # Load the data
+    folder_path = './Data/Model/Simulations/'
+    best_option_mappping = {
+        'AB': 'A',
+        'CD': 'C',
+        'CA': 'C',
+        'BD': 'B',
+        'AD': 'A',
+        'CB': 'C'
+    }
+    all_sim = {}
 
-    dual_results = dual_simulation[dual_simulation['pair'] == ('C', 'A')].groupby('simulation_num').agg(
-        choice=('choice', proportion_chosen),
-        t=('t', 'mean'),
-        a=('a', 'mean'),
-        param_weight=('param_weight', 'mean'),
-        obj_weight=('obj_weight', 'mean'),
-        weight_dir=('weight_Dir', 'mean'),
-    ).reset_index()
+    for file in os.listdir(folder_path):
+        if file.endswith('.csv'):
+            file_path = os.path.join(folder_path, file)
+            all_sim[file] = pd.read_csv(file_path)
+            all_sim[file].loc[:, 'Model'] = os.path.splitext(file)[0].split('_')[0]
+            all_sim[file].loc[:, 'Condition'] = os.path.splitext(file)[0].split('_')[1]
+            all_sim[file].loc[:, 'pair'] = all_sim[file]['pair'].apply(ast.literal_eval)
+            all_sim[file].loc[:, 'pair'] = all_sim[file]['pair'].apply(lambda x: ''.join(x))
+            all_sim[file].loc[:, 'mapping'] = all_sim[file]['pair'].apply(lambda x: best_option_mappping[x])
+            all_sim[file].loc[:, 'bestoption'] = (
+                        all_sim[file]['choice'] == all_sim[file]['mapping']).astype(int)
 
-    print(dual_results['choice'].mean())
+    # combine the data
+    all_sim_df = pd.concat(all_sim.values())
+    print(all_sim_df['Model'].unique())
+    # all_sim_df['Model'] = pd.Categorical(all_sim_df['Model'], categories=['delta', 'decay', 'dual'], ordered=True)
+
+    # plot the data
+    CA = all_sim_df[all_sim_df['pair'] == 'CA']
+    plt.figure(figsize=(10, 8))
+    sns.barplot(data=CA, x='Model', y='bestoption', hue='Condition', errorbar=None, palette=sns.color_palette('deep')[0:3])
+    plt.ylabel('Proportion of Selecting the Best Option', fontsize=25)
+    plt.xlabel('')
+    plt.xticks(labels=['Delta', 'Dual-Process'], ticks=[0, 1], fontsize=25)
+    plt.yticks(fontsize=20)
+    plt.ylim(0, 0.7)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    label_map = {
+        "baseline": "Baseline",
+        "frequency": "Frequency",
+        "magnitude": "Variance"
+    }
+    new_labels = [label_map.get(lbl, lbl) for lbl in labels]
+    plt.legend(handles, new_labels, title='Condition', fontsize=20, title_fontsize=20, loc='lower left')
+    sns.despine()
+    plt.tight_layout()
+    plt.savefig('./figures/simulated_CA.png', dpi=600)
+    plt.show()
 
 

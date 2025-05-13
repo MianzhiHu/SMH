@@ -248,7 +248,6 @@ def calculate_snr(signal, noise):
     noise_power = np.mean(noise ** 2)
     return 10 * np.log10(signal_power / noise_power)
 # ======================================================================================================================
-
 # Rename the columns to include the participant number and trial number
 def rename_columns(df):
     new_columns = []
@@ -306,6 +305,14 @@ def find_peak(data):
         else:
             peak.append(trial_data.max())
     return peak
+
+
+def signed_log_transform(x):
+    """
+    Applies the signed log transformation:
+        y = sign(x) * log(1 + |x|)
+    """
+    return np.sign(x) * np.log1p(np.abs(x))
 
 
 # Function to apply the mapping

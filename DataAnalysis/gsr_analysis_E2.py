@@ -15,20 +15,7 @@ import pingouin as pg
 # load processed data
 # path = './Data/processed_data_modeled.csv'
 
-# path = './Data/processed_data_auto.csv'
-# path = './Data/processed_data_trial_auto.csv'
-# path = './Data/processed_data_difference.csv'
-# path = './Data/processed_data_trial_highpass.csv'
-# path = './Data/processed_data_experiment_smoothmedian.csv'
-# path = './Data/processed_data_trial_smoothmedian.csv'
-path = './Data/processed_data_experiment_cvxeda.csv'
-# path = './Data/processed_data_trial_cvxeda.csv'
-# path = './Data/good_learner_data_experiment_cvxeda.csv'
-# path = './Data/processed_data_experiment_cda.csv'
-# path = './Data/processed_data_trial_cda.csv'
-# path = './Data/processed_data_combined.csv'
-# path = './Data/processed_data_experiment_SparsEDA.csv'
-# path = './Data/processed_data_trial_SparsEDA.csv'
+path = './Data/E2/Preprocessed/processed_data_experiment_cvxeda_E2.csv'
 
 df = pd.read_csv(path)
 
@@ -40,7 +27,7 @@ df = pd.read_csv(path)
 
 # remove nan values
 df = df.dropna()
-df['Condition'] = pd.Categorical(df['Condition'], categories=['Baseline', 'Frequency', 'Magnitude'], ordered=True)
+df['Condition'] = pd.Categorical(df['Condition'], categories=['NoHighStake', 'HighStake'], ordered=True)
 
 # split the data into training and test data
 training_data = df[df['Phase'] != 'Test']
@@ -51,6 +38,10 @@ test_CA = test_data[test_data['TrialType'] == 2]
 test_CB = test_data[test_data['TrialType'] == 3]
 test_AD = test_data[test_data['TrialType'] == 4]
 test_BD = test_data[test_data['TrialType'] == 5]
+
+# print average A value per participant
+print('Average A value per participant:')
+print(training_data.groupby('Subnum')['BestOption'].mean())
 
 # remove trial-level data and save the individual-level data as a separate file for future use
 df_individual = df.drop_duplicates(subset='Subnum').reset_index(drop=True)
@@ -80,20 +71,15 @@ training_data.loc[:, 'WSLS'] = ((training_data['Previous_Loss'] == 0) & (trainin
 print(training_data.groupby('Condition')['WSLS'].mean())
 
 # further split the data by condition
-baseline = df[df['Condition'] == 'Baseline']
-baseline_training = training_data[training_data['Condition'] == 'Baseline']
-baseline_testing = test_data[test_data['Condition'] == 'Baseline']
-print(baseline_training['Subnum'].nunique())
+no_high_stake = df[df['Condition'] == 'NoHighStake']
+no_high_stake_training = training_data[training_data['Condition'] == 'NoHighStake']
+no_high_stake_testing = test_data[test_data['Condition'] == 'NoHighStake']
+print(no_high_stake_training['Subnum'].nunique())
 
-frequency = df[df['Condition'] == 'Frequency']
-frequency_training = training_data[training_data['Condition'] == 'Frequency']
-frequency_testing = test_data[test_data['Condition'] == 'Frequency']
-print(frequency_training['Subnum'].nunique())
-
-magnitude = df[df['Condition'] == 'Magnitude']
-magnitude_training = training_data[training_data['Condition'] == 'Magnitude']
-magnitude_testing = test_data[test_data['Condition'] == 'Magnitude']
-print(magnitude_training['Subnum'].nunique())
+with_high_stake = df[df['Condition'] == 'HighStake']
+with_high_stake_training = training_data[training_data['Condition'] == 'HighStake']
+with_high_stake_testing = test_data[test_data['Condition'] == 'HighStake']
+print(with_high_stake['Subnum'].nunique())
 
 # test whether people show higher outcome GSR when they choose the bad option
 # there doesn't seem to be a significant difference
@@ -137,46 +123,44 @@ print('Outcome GSR for the worst option:', df[df['BestOption'] == 0]['PhasicAnti
 pairwise_t_test_GSR(test_data, 'PhasicAnticipatoryGSRAUC', 'testing', 2)
 
 # t-test between conditions
-print(ttest_ind(df[df['Condition'] == 'Baseline'].groupby('Subnum')['PhasicAnticipatoryGSRAUC'].mean(),
-                df[df['Condition'] == 'Frequency'].groupby('Subnum')['PhasicAnticipatoryGSRAUC'].mean()))
-print(f'Baseline Phasic: {df[df["Condition"] == "Baseline"]["PhasicAnticipatoryGSRAUC"].mean()}')
-print(f'Frequency Phasic: {df[df["Condition"] == "Frequency"]["PhasicAnticipatoryGSRAUC"].mean()}')
-print(f'Magnitude Phasic: {df[df["Condition"] == "Magnitude"]["PhasicAnticipatoryGSRAUC"].mean()}')
-print(f'Baseline Tonic: {df[df["Condition"] == "Baseline"]["TonicAnticipatoryGSRAUC"].mean()}')
-print(f'Frequency Tonic: {df[df["Condition"] == "Frequency"]["TonicAnticipatoryGSRAUC"].mean()}')
-print(f'Magnitude Tonic: {df[df["Condition"] == "Magnitude"]["TonicAnticipatoryGSRAUC"].mean()}')
+print(ttest_ind(df[df['Condition'] == 'HighStake'].groupby('Subnum')['PhasicAnticipatoryGSRAUC'].mean(),
+                df[df['Condition'] == 'NoHighStake'].groupby('Subnum')['PhasicAnticipatoryGSRAUC'].mean()))
+print(f'NoHighStake Phasic: {df[df["Condition"] == "NoHighStake"]["PhasicAnticipatoryGSRAUC"].mean()}')
+print(f'HighStake Phasic: {df[df["Condition"] == "HighStake"]["PhasicAnticipatoryGSRAUC"].mean()}')
+print(f'NoHighStake Tonic: {df[df["Condition"] == "NoHighStake"]["TonicAnticipatoryGSRAUC"].mean()}')
+print(f'HighStake Tonic: {df[df["Condition"] == "HighStake"]["TonicAnticipatoryGSRAUC"].mean()}')
 
-# ======================================================================================================================
-#                                                  Group Analysis
-# ======================================================================================================================
-# calculate the average C choice rate for each participant
-prop_optimal = df.groupby(['Subnum', 'Condition', 'TrialType'])['BestOption'].mean().reset_index()
-prop_optimal_CA = prop_optimal[prop_optimal['TrialType'] == 2]
-group_mask_A = prop_optimal_CA['BestOption'] < 0.25
-group_mask_C = prop_optimal_CA['BestOption'] > 0.75
-group_mask_hesitant = (prop_optimal_CA['BestOption'] >= 0.25) & (prop_optimal_CA['BestOption'] <= 0.75)
-df['Group'] = df['Subnum'].map(
-    {subnum: 'A' if mask_A else 'C' if mask_C else 'H' for subnum, mask_A, mask_C in
-        zip(prop_optimal_CA['Subnum'], group_mask_A, group_mask_C)})
-df.to_csv('./Data/processed_data_modeled.csv', index=False)
-
-# filter df by the group mask
-group_A = df[df['Subnum'].isin(prop_optimal_CA[group_mask_A]['Subnum'].values)]
-group_C = df[df['Subnum'].isin(prop_optimal_CA[group_mask_C]['Subnum'].values)]
-group_hesitant = df[df['Subnum'].isin(prop_optimal_CA[group_mask_hesitant]['Subnum'].values)]
-
-# Predict the best option using the anticipatory GSR
-group = group_A[group_A['TrialType'] == 2 & (group_A['Condition'] == 'Frequency')]
-print(group['Condition'].value_counts() / 25)
-model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ C(BestOption)", group, groups=group["Subnum"]).fit()
-print(model.summary())
+# # ======================================================================================================================
+# #                                                  Group Analysis
+# # ======================================================================================================================
+# # calculate the average C choice rate for each participant
+# prop_optimal = df.groupby(['Subnum', 'Condition', 'TrialType'])['BestOption'].mean().reset_index()
+# prop_optimal_CA = prop_optimal[prop_optimal['TrialType'] == 2]
+# group_mask_A = prop_optimal_CA['BestOption'] < 0.25
+# group_mask_C = prop_optimal_CA['BestOption'] > 0.75
+# group_mask_hesitant = (prop_optimal_CA['BestOption'] >= 0.25) & (prop_optimal_CA['BestOption'] <= 0.75)
+# df['Group'] = df['Subnum'].map(
+#     {subnum: 'A' if mask_A else 'C' if mask_C else 'H' for subnum, mask_A, mask_C in
+#         zip(prop_optimal_CA['Subnum'], group_mask_A, group_mask_C)})
+# df.to_csv('./Data/processed_data_modeled.csv', index=False)
+#
+# # filter df by the group mask
+# group_A = df[df['Subnum'].isin(prop_optimal_CA[group_mask_A]['Subnum'].values)]
+# group_C = df[df['Subnum'].isin(prop_optimal_CA[group_mask_C]['Subnum'].values)]
+# group_hesitant = df[df['Subnum'].isin(prop_optimal_CA[group_mask_hesitant]['Subnum'].values)]
+#
+# # Predict the best option using the anticipatory GSR
+# group = group_A[group_A['TrialType'] == 2 & (group_A['Condition'] == 'Frequency')]
+# print(group['Condition'].value_counts() / 25)
+# model = smf.mixedlm("PhasicAnticipatoryGSRAUC ~ C(BestOption)", group, groups=group["Subnum"]).fit()
+# print(model.summary())
 
 
 # # ======================================================================================================================
 # #                                                  Advanced Analysis
 # # ======================================================================================================================
 # # turn best option into a categorical variable
-condition_of_interest = baseline
+condition_of_interest = with_high_stake
 df['BestOption'] = df['BestOption'].astype('category')
 test_CA.loc[:, 'BestOption'] = test_CA['BestOption'].astype('category')
 test_CA.loc[:, 'Condition'] = test_CA['Condition'].astype('str')
@@ -213,7 +197,7 @@ test_CA.loc[:, 'Condition'] = test_CA['Condition'].astype('str')
 # print(model.summary())
 # print(sm.stats.anova_lm(model))
 
-model = pg.mixed_anova(data=test_CA, dv='PhasicAnticipatoryGSRAUC', within='BestOption', between='Condition', subject='Subnum')
+# model = pg.mixed_anova(data=test_CA, dv='PhasicAnticipatoryGSRAUC', within='BestOption', between='Condition', subject='Subnum')
 
 # # ======================================================================================================================
 # #                                                  Plots
@@ -224,19 +208,19 @@ sns.histplot(df['PhasicAnticipatoryGSRAUC'], bins=20, kde=True, ax=ax[0])
 sns.histplot(df['PhasicOutcomeGSRAUC'], bins=20, kde=True, ax=ax[1])
 ax[0].set_title('Anticipatory GSR AUC (uS/sec)', fontsize=25)
 ax[1].set_title('Outcome GSR AUC (uS/sec)', fontsize=25)
-plt.savefig('./figures/GSR_distribution.png', dpi=600)
+plt.savefig('./figures/GSR_distribution_E2.png', dpi=600)
 plt.clf()
 
-# plot the histgram distribution of subjective weights by condition
-fig, ax = plt.subplots(1, 3, figsize=(20, 8))
-sns.histplot(df[df['Condition'] == 'Baseline']['subj_weight'], bins=20, kde=True, ax=ax[0])
-sns.histplot(df[df['Condition'] == 'Frequency']['subj_weight'], bins=20, kde=True, ax=ax[1])
-sns.histplot(df[df['Condition'] == 'Magnitude']['subj_weight'], bins=20, kde=True, ax=ax[2])
-ax[0].set_title('Baseline', fontsize=25)
-ax[1].set_title('Frequency', fontsize=25)
-ax[2].set_title('Magnitude', fontsize=25)
-plt.savefig('./figures/weight_distribution.png', dpi=600)
-plt.clf()
+# # plot the histgram distribution of subjective weights by condition
+# fig, ax = plt.subplots(1, 3, figsize=(20, 8))
+# sns.histplot(df[df['Condition'] == 'Baseline']['subj_weight'], bins=20, kde=True, ax=ax[0])
+# sns.histplot(df[df['Condition'] == 'Frequency']['subj_weight'], bins=20, kde=True, ax=ax[1])
+# sns.histplot(df[df['Condition'] == 'Magnitude']['subj_weight'], bins=20, kde=True, ax=ax[2])
+# ax[0].set_title('Baseline', fontsize=25)
+# ax[1].set_title('Frequency', fontsize=25)
+# ax[2].set_title('Magnitude', fontsize=25)
+# plt.savefig('./figures/weight_distribution.png', dpi=600)
+# plt.clf()
 
 # plot the interaction for each trial type
 data_list = [train_AB, train_CD, test_CA, test_CB, test_AD, test_BD]
@@ -251,7 +235,7 @@ for trial_type in data_list:
         errorbar='se'
     )
     plt.title(mapping[trial_type['TrialType'].iloc[0]])
-    plt.savefig(f'./figures/Anticipatory_interaction_plot_{mapping[trial_type["TrialType"].iloc[0]]}.png', dpi=600)
+    plt.savefig(f'./figures/Anticipatory_interaction_plot_{mapping[trial_type["TrialType"].iloc[0]]}_E2.png', dpi=600)
     plt.clf()
 
 for trial_type in data_list:
@@ -264,43 +248,69 @@ for trial_type in data_list:
         errorbar='se'
     )
     plt.title(mapping[trial_type['TrialType'].iloc[0]])
-    plt.savefig(f'./figures/Outcome_interaction_plot_{mapping[trial_type["TrialType"].iloc[0]]}.png', dpi=600)
+    plt.savefig(f'./figures/Outcome_interaction_plot_{mapping[trial_type["TrialType"].iloc[0]]}_E2.png', dpi=600)
     plt.clf()
 
 # specifically for the CA trials
 df_name = test_CA
 df_name = df_name[df_name['TrialType'] == 2]
 print(df_name['Condition'].unique())
-df_name['Condition'] = pd.Categorical(df_name['Condition'], categories=['Baseline', 'Frequency', 'Magnitude'], ordered=True)
-df_name['Condition'] = df_name['Condition'].cat.rename_categories({
-    'Magnitude': 'Variance'
-})
+df_name['Condition'] = pd.Categorical(df_name['Condition'], categories=['NoHighStake', 'HighStake'], ordered=True)
+df_name_plotting = df_name.groupby(['Subnum', 'Condition', 'BestOption'])['PhasicAnticipatoryGSRAUC'].mean().reset_index().dropna()
 plt.figure(figsize=(10, 8))
 sns.pointplot(
-    data=df_name,
+    data=df_name_plotting,
     x='BestOption',
     y='PhasicAnticipatoryGSRAUC',
     hue='Condition',
     dodge=True,
     errorbar='se',
-    palette=sns.color_palette('deep')[0:3]
+    palette=sns.color_palette('deep')[0:2]
 )
 plt.title('')
 plt.ylabel('Anticipatory GSR AUC (uS/sec)', fontsize=25)
 plt.xlabel('')
 plt.xticks([0, 1], ['A', 'C'], fontsize=25)
 plt.yticks(fontsize=20)
-plt.legend(title='Condition', fontsize=20, title_fontsize=20, framealpha=0.5)
+plt.legend(title='Trial Stakes', fontsize=20, title_fontsize=20, framealpha=0.5)
 sns.despine()
-plt.savefig(f'./figures/GSR_CA.png', dpi=600)
+plt.savefig(f'./figures/GSR_CA_E2.png', dpi=600)
 plt.clf()
 
-# plot out the anticipatory GSR data by condition
-for signal in ['PhasicOutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC']:
-    plot_trial(test_CA, signal, f'{signal} (uS/sec)', trial="CA")
+# split by high stake and low stake
+df_name = with_high_stake_testing
+df_name = df_name[df_name['TrialType'] == 2]
+df_name['HighStakes'] = pd.Categorical(df_name['HighStakes'], categories=[False, True],
+                                       ordered=True).rename_categories(
+    {False: 'Low Stake Trials', True: 'High Stake Trials'})
+df_name_plotting = df_name.groupby(['Subnum', 'HighStakes', 'BestOption'])['PhasicAnticipatoryGSRAUC'].mean().reset_index()
+plt.figure(figsize=(10, 8))
+sns.pointplot(
+    data=df_name_plotting,
+    x='BestOption',
+    y='PhasicAnticipatoryGSRAUC',
+    hue='HighStakes',
+    dodge=True,
+    errorbar='se',
+    palette=sns.color_palette('deep')[0:2]
+)
+plt.title('')
+plt.ylabel('Anticipatory GSR AUC (uS/sec)', fontsize=25)
+plt.xlabel('')
+plt.xticks([0, 1], ['A', 'C'], fontsize=25)
+plt.yticks(fontsize=20)
+plt.legend(title='Trial Stakes', fontsize=20, title_fontsize=20, framealpha=0.5)
+sns.despine()
+plt.savefig(f'./figures/HighStakes_CA_E2.png', dpi=600)
+plt.clf()
 
-# plot out the overall anticipatory and outcome GSR data by best option
-plot_overall(test_data, 'AUC (uS/sec)', 'test')
 
-# plot out the anticipatory and outcome GSR data by phase
-plot_by_phase(frequency_training, 'PhasicAnticipatoryGSRAUC', 'Anticipatory AUC (uS/sec)')
+# # plot out the anticipatory GSR data by condition
+# for signal in ['PhasicOutcomeGSRAUC', 'PhasicAnticipatoryGSRAUC']:
+#     plot_trial(test_CA, signal, f'{signal} (uS/sec)', trial="CA")
+#
+# # plot out the overall anticipatory and outcome GSR data by best option
+# plot_overall(test_data, 'AUC (uS/sec)', 'test')
+#
+# # plot out the anticipatory and outcome GSR data by phase
+# plot_by_phase(with_high_stake_training, 'PhasicAnticipatoryGSRAUC', 'Anticipatory AUC (uS/sec)')
