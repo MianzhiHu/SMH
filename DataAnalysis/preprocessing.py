@@ -16,6 +16,7 @@ from utilities.pyEDA.main import *
 import pyphysio as ph
 from utils.dfa import *
 from pyphysio.specialized.eda import DriverEstim, PhasicEstim
+from MFDFA import MFDFA
 
 # ======================================================================================================================
 # Load data from JATOS generated file
@@ -82,12 +83,13 @@ personality_list = ['BDI_Total', 'BAI_Total', 'BISScore', 'PSWQScore', 'ESIBF_di
 
 demo_list = ['Gender', 'Ethnicity', 'Race', 'Age']
 
-kept_columns = (['Condition'] + ['studyResultId'] + behavioral_list + GSR_list +
-                personality_list + demo_list)
 
 if ex_id == 'E2':
     # add the high stakes column
     behavioral_list += ['HighStakes']
+
+kept_columns = (['Condition'] + ['studyResultId'] + behavioral_list + GSR_list +
+                personality_list + demo_list)
 
 # keep only the necessary columns
 data = data[kept_columns]
@@ -127,6 +129,19 @@ df[GSR_list] = df[GSR_list].map(extract_samples)
 # calculate the area under the curve for each GSR data
 df[GSR_list] = df[GSR_list].map(str)
 ts_ant_gsr, ts_out_gsr = processGSR(df)
+
+# # pick the first column
+# gsr_test = preprocessed
+# gsr_test = np.array(ts_ant_gsr.iloc[:, 0])
+# gsr_test_reshaped = gsr_test.reshape(-1, 1)
+# min_window = 200
+# max_window = 13 * 100
+# q_val = np.array([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+# lag = np.arange(min_window, max_window + 1, 1)
+# lag, dfa_results = MFDFA(gsr_test, lag = lag, q=q_val, order=1)
+# H_hat = np.polyfit(np.log(lag),np.log(dfa_results),1)[0]
+# hurst, cis, rsquared = dfa(gsr_test_reshaped, max_window_size=max_window, min_window_size=min_window, return_confidence_interval=True)
+# print(f'H using dfa: {hurst}; H using MFDFA: {H_hat}')
 
 # ======================================================================================================================
 # Preprocess the GSR data
